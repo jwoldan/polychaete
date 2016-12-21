@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   context: __dirname,
-  entry: './frontend/polychaete.js',
+  entry: './lib/polychaete.js',
   output: {
     path: path.join(__dirname, 'javascripts'),
     filename: 'bundle.js',
