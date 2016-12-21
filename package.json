@@ -1,0 +1,22 @@
+{
+  "name": "polychaete",
+  "version": "1.0.0",
+  "description": "A classic arcade-style game based on Centipede",
+  "main": "webpack.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jwoldan/polychaete.git"
+  },
+  "author": "Jeffrey Woldan (j@jwoldan.net)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jwoldan/polychaete/issues"
+  },
+  "homepage": "https://github.com/jwoldan/polychaete#readme"
+}
