@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/jwoldan/polychaete/issues"
   },
-  "homepage": "https://github.com/jwoldan/polychaete#readme"
+  "homepage": "https://github.com/jwoldan/polychaete#readme",
+  "dependencies": {
+    "createjs-easeljs": "^0.8.2"
+  }
 }
