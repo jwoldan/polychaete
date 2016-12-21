@@ -4,7 +4,7 @@ import {
   createSegmentSprite,
   createSpongeSprite,
   createDiverSprite
-} from './sprite_sheets';
+} from './display/sprite_sheets';
 
 const frameRate = 9;
 
