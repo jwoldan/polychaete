@@ -1,0 +1,27 @@
+html, body, main, section, h1 {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  outline: 0;
+
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  text-decoration: inherit;
+  vertical-align: inherit;
+
+  box-sizing: inherit;
+
+  background: transparent;
+}
+
+main {
+  width: 500px;
+  margin: 20px auto 0;
+}
+
+h1 {
+  font-family: 'Monoton', cursive;
+  text-align: center;
+  font-size: 52px;
+}
