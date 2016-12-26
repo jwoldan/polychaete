@@ -9,6 +9,7 @@ html, body, main, section, h1 {
   text-align: inherit;
   text-decoration: inherit;
   vertical-align: inherit;
+  line-height: 1em;
 
   box-sizing: inherit;
 
@@ -24,4 +25,14 @@ h1 {
   font-family: 'Monoton', cursive;
   text-align: center;
   font-size: 52px;
+  margin-bottom: 10px;
+}
+
+.scoreboard {
+  display: flex;
+  justify-content: space-between;
+
+  font-family: 'Play', sans-serif;
+  font-size: 16px;
+  margin-bottom: 8px;
 }
