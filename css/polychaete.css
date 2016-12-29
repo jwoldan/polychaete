@@ -31,10 +31,14 @@ h1 {
 .scoreboard {
   display: flex;
   justify-content: space-between;
+  /*margin-bottom: 8px;*/
+  padding: 8px;
 
   font-family: 'Play', sans-serif;
   font-size: 16px;
-  margin-bottom: 8px;
+
+  background-color: black;
+  color: #ddd;
 }
 
 .popup {
