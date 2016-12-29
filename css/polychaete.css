@@ -1,4 +1,4 @@
-html, body, main, section, h1 {
+html, body, main, section, h1, p, button {
   padding: 0;
   border: 0;
   margin: 0;
@@ -35,4 +35,52 @@ h1 {
   font-family: 'Play', sans-serif;
   font-size: 16px;
   margin-bottom: 8px;
+}
+
+.popup {
+  position: absolute;
+  top: 250px;
+  width: 386px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  background-color: white;
+  border-radius: 2px;
+
+  font-family: 'Play', sans-serif;
+  font-size: 16px;
+  text-align: center;
+}
+
+.popup.hidden {
+  display: none;
+}
+
+.popup section {
+  margin: 5px;
+  padding: 20px 10px;
+
+  border: 1px solid black;
+  border-radius: 2px;
+}
+
+.popup p {
+  margin-bottom: 1em;
+}
+
+.popup button {
+  border: 1px solid black;
+  border-radius: 2px;
+  padding: 2px 5px;
+
+  font-family: 'Play', sans-serif;
+  font-size: 16px;
+
+  cursor: pointer;
+  user-select: none;
+}
+
+.popup button:hover {
+  background-color: black;
+  color: white;
 }
