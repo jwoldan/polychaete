@@ -41,6 +41,14 @@ p {
   margin-bottom: 1em;
 }
 
+a {
+  color: black;
+}
+
+a:visited {
+  color: black;
+}
+
 button {
   border: 1px solid black;
   border-radius: 2px;
@@ -90,7 +98,7 @@ button:hover {
 }
 
 #popup-about {
-  top: 200px;
+  top: 180px;
 }
 
 .popup.hidden {
