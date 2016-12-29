@@ -86,7 +86,7 @@ button:hover {
 
 .popup {
   position: absolute;
-  top: 250px;
+  top: 280px;
   width: 386px;
   left: 50%;
   transform: translateX(-50%);
@@ -99,6 +99,10 @@ button:hover {
 
 #popup-about {
   top: 180px;
+}
+
+#popup-start {
+  top: 300px;
 }
 
 .popup.hidden {
