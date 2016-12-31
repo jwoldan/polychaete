@@ -54,11 +54,11 @@
 	
 	var _game2 = _interopRequireDefault(_game);
 	
-	var _head = __webpack_require__(14);
+	var _head = __webpack_require__(3);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(15);
+	var _segment = __webpack_require__(4);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
@@ -96,33 +96,33 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _jsCookie = __webpack_require__(3);
+	var _jsCookie = __webpack_require__(7);
 	
 	var _jsCookie2 = _interopRequireDefault(_jsCookie);
 	
-	var _sprite_sheets = __webpack_require__(4);
+	var _sprite_sheets = __webpack_require__(6);
 	
-	var _ui_handler = __webpack_require__(5);
+	var _ui_handler = __webpack_require__(8);
 	
 	var _ui_handler2 = _interopRequireDefault(_ui_handler);
 	
-	var _key_handler = __webpack_require__(6);
+	var _key_handler = __webpack_require__(9);
 	
 	var _key_handler2 = _interopRequireDefault(_key_handler);
 	
-	var _sound_handler = __webpack_require__(10);
+	var _sound_handler = __webpack_require__(12);
 	
 	var _sound_handler2 = _interopRequireDefault(_sound_handler);
 	
-	var _board = __webpack_require__(12);
+	var _board = __webpack_require__(14);
 	
 	var _board2 = _interopRequireDefault(_board);
 	
-	var _head = __webpack_require__(14);
+	var _head = __webpack_require__(3);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(15);
+	var _segment = __webpack_require__(4);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
@@ -165,7 +165,6 @@
 	      this.currentScore = 0;
 	      this.newHighScore = false;
 	      this.uiHandler.updateCurrentScore(this.currentScore);
-	      // this.keyHandler.reset();
 	
 	      var board = this.board;
 	      board.reset();
@@ -192,7 +191,17 @@
 	    key: 'moveDiver',
 	    value: function moveDiver(xDiff, yDiff) {
 	      if (!this.started || this.paused) return;
-	      this.board.diver.changeBoundedPos(xDiff, yDiff);
+	
+	      var board = this.board;
+	      var diver = board.diver;
+	      var blocked = false;
+	      diver.changeBoundedPos(xDiff, yDiff);
+	      board.sponges.forEach(function (sponge) {
+	        if (sponge.overlaps(diver)) {
+	          blocked = true;
+	        }
+	      });
+	      if (blocked) diver.changeBoundedPos(-xDiff, -yDiff);
 	    }
 	  }, {
 	    key: 'fireLaser',
@@ -232,14 +241,6 @@
 	            collided = true;
 	          }
 	        });
-	        // if (!collided) {
-	        //   board.segments.forEach((otherSegment) => {
-	        //     if (segment.direction !== otherSegment.direction &&
-	        //         segment.overlaps(otherSegment)) {
-	        //       collided = true;
-	        //     }
-	        //   });
-	        // }
 	        segment.updatePosition(collided);
 	      });
 	
@@ -421,163 +422,65 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	 * JavaScript Cookie v2.1.3
-	 * https://github.com/js-cookie/js-cookie
-	 *
-	 * Copyright 2006, 2015 Klaus Hartl & Fagner Brack
-	 * Released under the MIT license
-	 */
-	;(function (factory) {
-		var registeredInModuleLoader = false;
-		if (true) {
-			!(__WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-			registeredInModuleLoader = true;
-		}
-		if (true) {
-			module.exports = factory();
-			registeredInModuleLoader = true;
-		}
-		if (!registeredInModuleLoader) {
-			var OldCookies = window.Cookies;
-			var api = window.Cookies = factory();
-			api.noConflict = function () {
-				window.Cookies = OldCookies;
-				return api;
-			};
-		}
-	}(function () {
-		function extend () {
-			var i = 0;
-			var result = {};
-			for (; i < arguments.length; i++) {
-				var attributes = arguments[ i ];
-				for (var key in attributes) {
-					result[key] = attributes[key];
-				}
-			}
-			return result;
-		}
+	'use strict';
 	
-		function init (converter) {
-			function api (key, value, attributes) {
-				var result;
-				if (typeof document === 'undefined') {
-					return;
-				}
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
 	
-				// Write
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-				if (arguments.length > 1) {
-					attributes = extend({
-						path: '/'
-					}, api.defaults, attributes);
+	var _createjs = __webpack_require__(1);
 	
-					if (typeof attributes.expires === 'number') {
-						var expires = new Date();
-						expires.setMilliseconds(expires.getMilliseconds() + attributes.expires * 864e+5);
-						attributes.expires = expires;
-					}
+	var _createjs2 = _interopRequireDefault(_createjs);
 	
-					try {
-						result = JSON.stringify(value);
-						if (/^[\{\[]/.test(result)) {
-							value = result;
-						}
-					} catch (e) {}
+	var _segment = __webpack_require__(4);
 	
-					if (!converter.write) {
-						value = encodeURIComponent(String(value))
-							.replace(/%(23|24|26|2B|3A|3C|3E|3D|2F|3F|40|5B|5D|5E|60|7B|7D|7C)/g, decodeURIComponent);
-					} else {
-						value = converter.write(value, key);
-					}
+	var _segment2 = _interopRequireDefault(_segment);
 	
-					key = encodeURIComponent(String(key));
-					key = key.replace(/%(23|24|26|2B|5E|60|7C)/g, decodeURIComponent);
-					key = key.replace(/[\(\)]/g, escape);
+	var _sprite_sheets = __webpack_require__(6);
 	
-					return (document.cookie = [
-						key, '=', value,
-						attributes.expires ? '; expires=' + attributes.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
-						attributes.path ? '; path=' + attributes.path : '',
-						attributes.domain ? '; domain=' + attributes.domain : '',
-						attributes.secure ? '; secure' : ''
-					].join(''));
-				}
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-				// Read
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-				if (!key) {
-					result = {};
-				}
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 	
-				// To prevent the for loop in the first place assign an empty array
-				// in case there are no cookies at all. Also prevents odd result when
-				// calling "get()"
-				var cookies = document.cookie ? document.cookie.split('; ') : [];
-				var rdecode = /(%[0-9A-Z]{2})+/g;
-				var i = 0;
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
-				for (; i < cookies.length; i++) {
-					var parts = cookies[i].split('=');
-					var cookie = parts.slice(1).join('=');
+	var HEAD_SHEET = (0, _sprite_sheets.createHeadSpriteSheet)();
 	
-					if (cookie.charAt(0) === '"') {
-						cookie = cookie.slice(1, -1);
-					}
+	var Head = function (_Segment) {
+	  _inherits(Head, _Segment);
 	
-					try {
-						var name = parts[0].replace(rdecode, decodeURIComponent);
-						cookie = converter.read ?
-							converter.read(cookie, name) : converter(cookie, name) ||
-							cookie.replace(rdecode, decodeURIComponent);
+	  function Head(options, moveBounds) {
+	    _classCallCheck(this, Head);
 	
-						if (this.json) {
-							try {
-								cookie = JSON.parse(cookie);
-							} catch (e) {}
-						}
+	    var startFrame = options.direction === _segment.LEFT ? "moveLeft" : "moveRight";
+	    var headSprite = new _createjs2.default.Sprite(HEAD_SHEET, startFrame);
 	
-						if (key === name) {
-							result = cookie;
-							break;
-						}
+	    return _possibleConstructorReturn(this, (Head.__proto__ || Object.getPrototypeOf(Head)).call(this, options, moveBounds, headSprite));
+	  }
 	
-						if (!key) {
-							result[name] = cookie;
-						}
-					} catch (e) {}
-				}
+	  _createClass(Head, null, [{
+	    key: 'createHeadFromSegment',
+	    value: function createHeadFromSegment(segment) {
+	      var head = new Head({
+	        x: segment.getX(),
+	        y: segment.getY(),
+	        direction: segment.direction,
+	        verticalDirection: segment.verticalDirection,
+	        velocityX: segment.velocityX
+	      }, Object.assign({}, segment.moveBounds));
+	      if (segment.next) head.connectNext(segment.next);
+	      return head;
+	    }
+	  }]);
 	
-				return result;
-			}
+	  return Head;
+	}(_segment2.default);
 	
-			api.set = api;
-			api.get = function (key) {
-				return api.call(api, key);
-			};
-			api.getJSON = function () {
-				return api.apply({
-					json: true
-				}, [].slice.call(arguments));
-			};
-			api.defaults = {};
-	
-			api.remove = function (key, attributes) {
-				api(key, '', extend(attributes, {
-					expires: -1
-				}));
-			};
-	
-			api.withConverter = init;
-	
-			return api;
-		}
-	
-		return init(function () {});
-	}));
-
+	exports.default = Head;
 
 /***/ },
 /* 4 */
@@ -588,387 +491,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	var FPS = exports.FPS = 120;
-	var ANIMATION_RATE = exports.ANIMATION_RATE = 10;
-	
-	var createDiverSpriteSheet = exports.createDiverSpriteSheet = function createDiverSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: {
-	      width: 16,
-	      height: 18
-	    },
-	    images: ['./assets/diver.png'],
-	    animations: {
-	      default: 0
-	    }
-	  });
-	};
-	
-	var createLaserBeamSpriteSheet = exports.createLaserBeamSpriteSheet = function createLaserBeamSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: {
-	      width: 2,
-	      height: 12
-	    },
-	    images: ['./assets/laser_beam.png'],
-	    animations: {
-	      default: 0
-	    }
-	  });
-	};
-	
-	var createHeadSpriteSheet = exports.createHeadSpriteSheet = function createHeadSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: [
-	    // move left
-	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
-	    // move right
-	    [0, 20, 16, 20], [16, 20, 16, 20], [32, 20, 16, 20],
-	    // move down
-	    [0, 40, 20, 20], [20, 40, 20, 20], [40, 40, 20, 20],
-	    // move up
-	    [0, 60, 20, 20], [20, 60, 20, 20], [40, 60, 20, 20]],
-	    images: ['./assets/head.png'],
-	    animations: {
-	      moveLeft: [0, 2],
-	      moveRight: [3, 5],
-	      moveDown: [6, 8],
-	      moveUp: [9, 11]
-	    },
-	    framerate: frameRate
-	  });
-	};
-	
-	var createSegmentSpriteSheet = exports.createSegmentSpriteSheet = function createSegmentSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: [
-	    // left/right
-	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
-	    // up/down
-	    [0, 20, 20, 20], [20, 20, 20, 20], [40, 20, 20, 20]],
-	    images: ['./assets/segment.png'],
-	    animations: {
-	      moveLeft: [0, 2],
-	      moveDown: 4,
-	      moveRight: {
-	        frames: [2, 1, 0]
-	      },
-	      moveUp: {
-	        frames: 4
-	      }
-	    },
-	    framerate: frameRate
-	  });
-	};
-	
-	var createSeaSpongeSpriteSheet = exports.createSeaSpongeSpriteSheet = function createSeaSpongeSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: {
-	      width: 16,
-	      height: 20
-	    },
-	    images: ['./assets/sea_sponge.png'],
-	    animations: {
-	      new: 0,
-	      oneHit: 1,
-	      twoHits: 2
-	    },
-	    framerate: frameRate
-	  });
-	};
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var UIHandler = function () {
-	  function UIHandler(game) {
-	    _classCallCheck(this, UIHandler);
-	
-	    this.game = game;
-	    this.currentScoreElement = document.getElementById('current-score');
-	    this.highScoreElement = document.getElementById('high-score');
-	    this.startGamePopup = document.getElementById('popup-start');
-	    this.startButton = document.getElementById('button-start');
-	    this.gameOverPopup = document.getElementById('popup-gameover');
-	    this.restartButton = document.getElementById('button-restart');
-	    this.gameOverScore = document.getElementById('gameover-score');
-	    this.gameOverHighScoreMessage = document.getElementById('gameover-high-score-message');
-	    this.aboutPopup = document.getElementById('popup-about');
-	    this.aboutButton = document.getElementById('button-about');
-	    this.aboutCloseButton = document.getElementById('button-about-close');
-	
-	    this.startGame = this.startGame.bind(this);
-	    this.toggleAboutPopup = this.toggleAboutPopup.bind(this);
-	
-	    this.startButton.addEventListener('click', this.startGame);
-	    this.restartButton.addEventListener('click', this.startGame);
-	    this.aboutButton.addEventListener('click', this.toggleAboutPopup);
-	    this.aboutCloseButton.addEventListener('click', this.toggleAboutPopup);
-	  }
-	
-	  _createClass(UIHandler, [{
-	    key: 'updateCurrentScore',
-	    value: function updateCurrentScore(newCurrentScore) {
-	      if (this.currentScoreElement) {
-	        this.currentScoreElement.innerText = newCurrentScore;
-	      }
-	    }
-	  }, {
-	    key: 'updateHighScore',
-	    value: function updateHighScore(newHighScore) {
-	      if (this.highScoreElement) {
-	        this.highScoreElement.innerText = newHighScore;
-	      }
-	    }
-	  }, {
-	    key: 'hideStartGamePopup',
-	    value: function hideStartGamePopup() {
-	      this.startGamePopup.className = "popup hidden";
-	    }
-	  }, {
-	    key: 'showGameOverPopup',
-	    value: function showGameOverPopup(newHighScore) {
-	      this.gameOverPopup.className = "popup";
-	      this.gameOverScore.innerText = this.currentScoreElement.innerText;
-	      if (newHighScore) {
-	        this.gameOverHighScoreMessage.innerText = "New High Score!";
-	      }
-	    }
-	  }, {
-	    key: 'hideGameOverPopup',
-	    value: function hideGameOverPopup() {
-	      this.gameOverPopup.className = "popup hidden";
-	    }
-	  }, {
-	    key: 'toggleAboutPopup',
-	    value: function toggleAboutPopup() {
-	      if (this.aboutPopup.className === "popup") {
-	        this.game.setPaused(false);
-	        this.aboutPopup.className = "popup hidden";
-	      } else {
-	        this.game.setPaused(true);
-	        this.aboutPopup.className = "popup";
-	      }
-	    }
-	  }, {
-	    key: 'startGame',
-	    value: function startGame() {
-	      this.game.initialize(true);
-	      this.hideStartGamePopup();
-	      this.hideGameOverPopup();
-	    }
-	  }]);
-	
-	  return UIHandler;
-	}();
-	
-	exports.default = UIHandler;
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _diver = __webpack_require__(7);
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var KEYCODE_LEFT = 37,
-	    KEYCODE_A = 65,
-	    KEYCODE_RIGHT = 39,
-	    KEYCODE_D = 68,
-	    KEYCODE_UP = 38,
-	    KEYCODE_W = 87,
-	    KEYCODE_DOWN = 40,
-	    KEYCODE_S = 83,
-	    KEYCODE_SPACE = 32;
-	
-	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE];
-	
-	var DIAG_MOVE_AMOUNT = Math.sqrt(_diver.DIVER_MOVE_AMOUNT * _diver.DIVER_MOVE_AMOUNT / 2);
-	
-	var KeyHandler = function () {
-		function KeyHandler(game, stage) {
-			_classCallCheck(this, KeyHandler);
-	
-			this.game = game;
-			this.stage = stage;
-			this.reset();
-	
-			this.handleKeyDown = this.handleKeyDown.bind(this);
-			this.handleKeyUp = this.handleKeyUp.bind(this);
-			this.handleTick = this.handleTick.bind(this);
-		}
-	
-		_createClass(KeyHandler, [{
-			key: 'reset',
-			value: function reset() {
-				var _this = this;
-	
-				this.keysDown = {};
-				controlKeys.forEach(function (key) {
-					_this.keysDown[key] = false;
-				});
-			}
-		}, {
-			key: 'handleKeyDown',
-			value: function handleKeyDown(e) {
-				if (e.keyCode === KEYCODE_SPACE && !this.keysDown[e.keyCode]) {
-					this.game.fireLaser();
-				}
-				if (controlKeys.includes(e.keyCode)) {
-					e.preventDefault();
-					this.keysDown[e.keyCode] = true;
-				}
-			}
-		}, {
-			key: 'handleKeyUp',
-			value: function handleKeyUp(e) {
-				if (controlKeys.includes(e.keyCode)) {
-					e.preventDefault();
-					this.keysDown[e.keyCode] = false;
-				}
-			}
-		}, {
-			key: 'handleTick',
-			value: function handleTick(e) {
-				if (e.paused) return;
-	
-				var diagMove = false;
-				if (this.leftUpPressed()) {
-					this.game.moveDiver(-DIAG_MOVE_AMOUNT, -DIAG_MOVE_AMOUNT);
-					diagMove = true;
-				}
-				if (this.rightUpPressed()) {
-					this.game.moveDiver(DIAG_MOVE_AMOUNT, -DIAG_MOVE_AMOUNT);
-					diagMove = true;
-				}
-				if (this.leftDownPressed()) {
-					this.game.moveDiver(-DIAG_MOVE_AMOUNT, DIAG_MOVE_AMOUNT);
-					diagMove = true;
-				}
-				if (this.rightDownPressed()) {
-					this.game.moveDiver(DIAG_MOVE_AMOUNT, DIAG_MOVE_AMOUNT);
-					diagMove = true;
-				}
-	
-				if (!diagMove) {
-					if (this.leftPressed()) {
-						this.game.moveDiver(-_diver.DIVER_MOVE_AMOUNT, 0);
-					}
-					if (this.rightPressed()) {
-						this.game.moveDiver(_diver.DIVER_MOVE_AMOUNT, 0);
-					}
-	
-					if (this.upPressed()) {
-						this.game.moveDiver(0, -_diver.DIVER_MOVE_AMOUNT);
-					}
-	
-					if (this.downPressed()) {
-						this.game.moveDiver(0, _diver.DIVER_MOVE_AMOUNT);
-					}
-				}
-			}
-		}, {
-			key: 'leftPressed',
-			value: function leftPressed() {
-				return this.keysDown[KEYCODE_LEFT] || this.keysDown[KEYCODE_A];
-			}
-		}, {
-			key: 'rightPressed',
-			value: function rightPressed() {
-				return this.keysDown[KEYCODE_RIGHT] || this.keysDown[KEYCODE_D];
-			}
-		}, {
-			key: 'upPressed',
-			value: function upPressed() {
-				return this.keysDown[KEYCODE_UP] || this.keysDown[KEYCODE_W];
-			}
-		}, {
-			key: 'downPressed',
-			value: function downPressed() {
-				return this.keysDown[KEYCODE_DOWN] || this.keysDown[KEYCODE_S];
-			}
-		}, {
-			key: 'leftUpPressed',
-			value: function leftUpPressed() {
-				return this.leftPressed() && this.upPressed();
-			}
-		}, {
-			key: 'rightUpPressed',
-			value: function rightUpPressed() {
-				return this.rightPressed() && this.upPressed();
-			}
-		}, {
-			key: 'leftDownPressed',
-			value: function leftDownPressed() {
-				return this.leftPressed() && this.downPressed();
-			}
-		}, {
-			key: 'rightDownPressed',
-			value: function rightDownPressed() {
-				return this.rightPressed() && this.downPressed();
-			}
-		}, {
-			key: 'attachListeners',
-			value: function attachListeners() {
-				document.addEventListener('keydown', this.handleKeyDown);
-				document.addEventListener('keyup', this.handleKeyUp);
-			}
-		}, {
-			key: 'removeListeners',
-			value: function removeListeners() {
-				document.removeEventListener('keydown', this.handleKeyDown);
-				document.removeEventListener('keyup', this.handleKeyUp);
-			}
-		}]);
-	
-		return KeyHandler;
-	}();
-	
-	exports.default = KeyHandler;
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.DIVER_MOVE_AMOUNT = undefined;
+	exports.INITIAL_VELOCITY_X = exports.LEFT = exports.RIGHT = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -976,15 +499,11 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(8);
+	var _game_object = __webpack_require__(5);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _laser_beam = __webpack_require__(9);
-	
-	var _laser_beam2 = _interopRequireDefault(_laser_beam);
+	var _sprite_sheets = __webpack_require__(6);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -994,46 +513,175 @@
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
-	var DIVER_MOVE_AMOUNT = exports.DIVER_MOVE_AMOUNT = 3;
+	var SEGMENT_SHEET = (0, _sprite_sheets.createSegmentSpriteSheet)();
 	
-	var DIVER_SHEET = (0, _sprite_sheets.createDiverSpriteSheet)();
+	var RIGHT = exports.RIGHT = 'RIGHT';
+	var LEFT = exports.LEFT = 'LEFT';
+	var DOWN = 'DOWN';
+	var UP = 'UP';
+	var VERTICAL_FROM_RIGHT = 'VERTICAL_FROM_RIGHT';
+	var VERTICAL_FROM_LEFT = 'VERTICAL_FROM_LEFT';
 	
-	var Diver = function (_GameObject) {
-	  _inherits(Diver, _GameObject);
+	var INITIAL_VELOCITY_X = exports.INITIAL_VELOCITY_X = 2;
+	var VELOCITY_Y = 10;
 	
-	  function Diver(options) {
-	    _classCallCheck(this, Diver);
+	var Segment = function (_GameObject) {
+	  _inherits(Segment, _GameObject);
 	
-	    var diverSprite = new _createjs2.default.Sprite(DIVER_SHEET);
+	  function Segment(options, moveBounds, alternateSprite) {
+	    _classCallCheck(this, Segment);
+	
+	    var segmentSprite = void 0;
+	    if (alternateSprite) {
+	      segmentSprite = alternateSprite;
+	    } else {
+	      var startFrame = options.direction === LEFT ? "moveLeft" : "moveRight";
+	      segmentSprite = alternateSprite ? alternateSprite : new _createjs2.default.Sprite(SEGMENT_SHEET, startFrame);
+	    }
 	
 	    var defaultOptions = {
-	      x: 200,
-	      y: 580,
+	      x: 0,
+	      y: 0,
 	      width: 16,
-	      height: 18,
-	      sprite: diverSprite
+	      height: 20,
+	      sprite: segmentSprite
 	    };
-	    return _possibleConstructorReturn(this, (Diver.__proto__ || Object.getPrototypeOf(Diver)).call(this, Object.assign(defaultOptions, options), { minY: 520 }));
+	
+	    var _this = _possibleConstructorReturn(this, (Segment.__proto__ || Object.getPrototypeOf(Segment)).call(this, Object.assign(defaultOptions, options), moveBounds));
+	
+	    _this.direction = options.direction || RIGHT;
+	    _this.verticalDirection = options.verticalDirection || DOWN;
+	    _this.velocityX = options.velocityX || INITIAL_VELOCITY_X;
+	
+	    _this.prev = null;
+	    _this.next = null;
+	    return _this;
 	  }
 	
-	  _createClass(Diver, [{
-	    key: 'fireLaser',
-	    value: function fireLaser() {
-	      var laserBeam = new _laser_beam2.default({
-	        x: this.centerX() - 1,
-	        y: this.getY() - 12
-	      });
-	      return laserBeam;
+	  _createClass(Segment, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      var collided = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+	
+	      switch (this.direction) {
+	        case RIGHT:
+	          if (this.moveBounds.maxX - this.getMaxX() > this.velocityX && !collided) {
+	            this.moveRight();
+	          } else {
+	            this.moveVerticalFromRight();
+	          }
+	          break;
+	        case LEFT:
+	          if (this.getX() - this.moveBounds.minX > this.velocityX && !collided) {
+	            this.moveLeft();
+	          } else {
+	            this.moveVerticalFromLeft();
+	          }
+	          break;
+	        case VERTICAL_FROM_RIGHT:
+	          this.moveLeftFromVertical();
+	          break;
+	        case VERTICAL_FROM_LEFT:
+	          this.moveRightFromVertical();
+	          break;
+	      }
+	      if (this.verticalDirection === DOWN && this.moveBounds.maxY - this.getMaxY() < 10) {
+	        this.verticalDirection = UP;
+	        this.moveBounds.minY = 520;
+	      } else if (this.verticalDirection === UP && this.getY() - this.moveBounds.minY < 10) {
+	        this.verticalDirection = DOWN;
+	      }
+	    }
+	  }, {
+	    key: 'moveRight',
+	    value: function moveRight() {
+	      this.changeX(this.velocityX);
+	      this.direction = RIGHT;
+	    }
+	  }, {
+	    key: 'moveLeft',
+	    value: function moveLeft() {
+	      this.changeX(-this.velocityX);
+	      this.direction = LEFT;
+	    }
+	  }, {
+	    key: 'moveVerticalFromRight',
+	    value: function moveVerticalFromRight() {
+	      var vertChange = void 0;
+	      if (this.verticalDirection === DOWN) {
+	        vertChange = VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveDown');
+	      } else {
+	        vertChange = -VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveUp');
+	      }
+	      this.changeX(this.velocityX);
+	      this.changeY(vertChange);
+	      this.direction = VERTICAL_FROM_RIGHT;
+	    }
+	  }, {
+	    key: 'moveVerticalFromLeft',
+	    value: function moveVerticalFromLeft() {
+	      var vertChange = void 0;
+	      if (this.verticalDirection === DOWN) {
+	        vertChange = VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveDown');
+	      } else {
+	        vertChange = -VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveUp');
+	      }
+	      this.changeX(-this.velocityX);
+	      this.changeY(vertChange);
+	      this.direction = VERTICAL_FROM_LEFT;
+	    }
+	  }, {
+	    key: 'moveRightFromVertical',
+	    value: function moveRightFromVertical() {
+	      var vertChange = this.verticalDirection === DOWN ? VELOCITY_Y : -VELOCITY_Y;
+	      this.sprite.gotoAndPlay('moveRight');
+	      this.changeX(this.velocityX);
+	      this.changeY(vertChange);
+	      this.direction = RIGHT;
+	    }
+	  }, {
+	    key: 'moveLeftFromVertical',
+	    value: function moveLeftFromVertical() {
+	      var vertChange = this.verticalDirection === DOWN ? VELOCITY_Y : -VELOCITY_Y;
+	      this.sprite.gotoAndPlay('moveLeft');
+	      this.changeX(-this.velocityX);
+	      this.changeY(vertChange);
+	      this.direction = LEFT;
+	    }
+	  }, {
+	    key: 'connectNext',
+	    value: function connectNext(segment) {
+	      var oldNext = this.next;
+	      this.next = segment;
+	      if (segment.prev) segment.prev.next = null;
+	      segment.prev = this;
+	      if (oldNext) {
+	        oldNext.prev = segment;
+	        segment.next = oldNext;
+	      }
+	    }
+	  }, {
+	    key: 'destroy',
+	    value: function destroy() {
+	      if (this.next) this.next.prev = null;
+	      if (this.prev) this.prev.next = null;
+	      this.next = null;
+	      this.prev = null;
+	      this.destroySprite();
 	    }
 	  }]);
 	
-	  return Diver;
+	  return Segment;
 	}(_game_object2.default);
 	
-	exports.default = Diver;
+	exports.default = Segment;
 
 /***/ },
-/* 8 */
+/* 5 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1209,7 +857,622 @@
 	exports.default = GameObject;
 
 /***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var FPS = exports.FPS = 120;
+	var ANIMATION_RATE = exports.ANIMATION_RATE = 10;
+	
+	var createDiverSpriteSheet = exports.createDiverSpriteSheet = function createDiverSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 16,
+	      height: 18
+	    },
+	    images: ['./assets/diver.png'],
+	    animations: {
+	      default: 0
+	    }
+	  });
+	};
+	
+	var createLaserBeamSpriteSheet = exports.createLaserBeamSpriteSheet = function createLaserBeamSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 2,
+	      height: 12
+	    },
+	    images: ['./assets/laser_beam.png'],
+	    animations: {
+	      default: 0
+	    }
+	  });
+	};
+	
+	var createHeadSpriteSheet = exports.createHeadSpriteSheet = function createHeadSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: [
+	    // move left
+	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
+	    // move right
+	    [0, 20, 16, 20], [16, 20, 16, 20], [32, 20, 16, 20],
+	    // move down
+	    [0, 40, 20, 20], [20, 40, 20, 20], [40, 40, 20, 20],
+	    // move up
+	    [0, 60, 20, 20], [20, 60, 20, 20], [40, 60, 20, 20]],
+	    images: ['./assets/head.png'],
+	    animations: {
+	      moveLeft: [0, 2],
+	      moveRight: [3, 5],
+	      moveDown: [6, 8],
+	      moveUp: [9, 11]
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createSegmentSpriteSheet = exports.createSegmentSpriteSheet = function createSegmentSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: [
+	    // left/right
+	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
+	    // up/down
+	    [0, 20, 20, 20], [20, 20, 20, 20], [40, 20, 20, 20]],
+	    images: ['./assets/segment.png'],
+	    animations: {
+	      moveLeft: [0, 2],
+	      moveDown: 4,
+	      moveRight: {
+	        frames: [2, 1, 0]
+	      },
+	      moveUp: {
+	        frames: 4
+	      }
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createSeaSpongeSpriteSheet = exports.createSeaSpongeSpriteSheet = function createSeaSpongeSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 16,
+	      height: 20
+	    },
+	    images: ['./assets/sea_sponge.png'],
+	    animations: {
+	      new: 0,
+	      oneHit: 1,
+	      twoHits: 2
+	    },
+	    framerate: frameRate
+	  });
+	};
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	 * JavaScript Cookie v2.1.3
+	 * https://github.com/js-cookie/js-cookie
+	 *
+	 * Copyright 2006, 2015 Klaus Hartl & Fagner Brack
+	 * Released under the MIT license
+	 */
+	;(function (factory) {
+		var registeredInModuleLoader = false;
+		if (true) {
+			!(__WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+			registeredInModuleLoader = true;
+		}
+		if (true) {
+			module.exports = factory();
+			registeredInModuleLoader = true;
+		}
+		if (!registeredInModuleLoader) {
+			var OldCookies = window.Cookies;
+			var api = window.Cookies = factory();
+			api.noConflict = function () {
+				window.Cookies = OldCookies;
+				return api;
+			};
+		}
+	}(function () {
+		function extend () {
+			var i = 0;
+			var result = {};
+			for (; i < arguments.length; i++) {
+				var attributes = arguments[ i ];
+				for (var key in attributes) {
+					result[key] = attributes[key];
+				}
+			}
+			return result;
+		}
+	
+		function init (converter) {
+			function api (key, value, attributes) {
+				var result;
+				if (typeof document === 'undefined') {
+					return;
+				}
+	
+				// Write
+	
+				if (arguments.length > 1) {
+					attributes = extend({
+						path: '/'
+					}, api.defaults, attributes);
+	
+					if (typeof attributes.expires === 'number') {
+						var expires = new Date();
+						expires.setMilliseconds(expires.getMilliseconds() + attributes.expires * 864e+5);
+						attributes.expires = expires;
+					}
+	
+					try {
+						result = JSON.stringify(value);
+						if (/^[\{\[]/.test(result)) {
+							value = result;
+						}
+					} catch (e) {}
+	
+					if (!converter.write) {
+						value = encodeURIComponent(String(value))
+							.replace(/%(23|24|26|2B|3A|3C|3E|3D|2F|3F|40|5B|5D|5E|60|7B|7D|7C)/g, decodeURIComponent);
+					} else {
+						value = converter.write(value, key);
+					}
+	
+					key = encodeURIComponent(String(key));
+					key = key.replace(/%(23|24|26|2B|5E|60|7C)/g, decodeURIComponent);
+					key = key.replace(/[\(\)]/g, escape);
+	
+					return (document.cookie = [
+						key, '=', value,
+						attributes.expires ? '; expires=' + attributes.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+						attributes.path ? '; path=' + attributes.path : '',
+						attributes.domain ? '; domain=' + attributes.domain : '',
+						attributes.secure ? '; secure' : ''
+					].join(''));
+				}
+	
+				// Read
+	
+				if (!key) {
+					result = {};
+				}
+	
+				// To prevent the for loop in the first place assign an empty array
+				// in case there are no cookies at all. Also prevents odd result when
+				// calling "get()"
+				var cookies = document.cookie ? document.cookie.split('; ') : [];
+				var rdecode = /(%[0-9A-Z]{2})+/g;
+				var i = 0;
+	
+				for (; i < cookies.length; i++) {
+					var parts = cookies[i].split('=');
+					var cookie = parts.slice(1).join('=');
+	
+					if (cookie.charAt(0) === '"') {
+						cookie = cookie.slice(1, -1);
+					}
+	
+					try {
+						var name = parts[0].replace(rdecode, decodeURIComponent);
+						cookie = converter.read ?
+							converter.read(cookie, name) : converter(cookie, name) ||
+							cookie.replace(rdecode, decodeURIComponent);
+	
+						if (this.json) {
+							try {
+								cookie = JSON.parse(cookie);
+							} catch (e) {}
+						}
+	
+						if (key === name) {
+							result = cookie;
+							break;
+						}
+	
+						if (!key) {
+							result[name] = cookie;
+						}
+					} catch (e) {}
+				}
+	
+				return result;
+			}
+	
+			api.set = api;
+			api.get = function (key) {
+				return api.call(api, key);
+			};
+			api.getJSON = function () {
+				return api.apply({
+					json: true
+				}, [].slice.call(arguments));
+			};
+			api.defaults = {};
+	
+			api.remove = function (key, attributes) {
+				api(key, '', extend(attributes, {
+					expires: -1
+				}));
+			};
+	
+			api.withConverter = init;
+	
+			return api;
+		}
+	
+		return init(function () {});
+	}));
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var UIHandler = function () {
+	  function UIHandler(game) {
+	    _classCallCheck(this, UIHandler);
+	
+	    this.game = game;
+	    this.currentScoreElement = document.getElementById('current-score');
+	    this.highScoreElement = document.getElementById('high-score');
+	    this.startGamePopup = document.getElementById('popup-start');
+	    this.startButton = document.getElementById('button-start');
+	    this.gameOverPopup = document.getElementById('popup-gameover');
+	    this.restartButton = document.getElementById('button-restart');
+	    this.gameOverScore = document.getElementById('gameover-score');
+	    this.gameOverHighScoreMessage = document.getElementById('gameover-high-score-message');
+	    this.aboutPopup = document.getElementById('popup-about');
+	    this.aboutButton = document.getElementById('button-about');
+	    this.aboutCloseButton = document.getElementById('button-about-close');
+	
+	    this.startGame = this.startGame.bind(this);
+	    this.toggleAboutPopup = this.toggleAboutPopup.bind(this);
+	
+	    this.startButton.addEventListener('click', this.startGame);
+	    this.restartButton.addEventListener('click', this.startGame);
+	    this.aboutButton.addEventListener('click', this.toggleAboutPopup);
+	    this.aboutCloseButton.addEventListener('click', this.toggleAboutPopup);
+	  }
+	
+	  _createClass(UIHandler, [{
+	    key: 'updateCurrentScore',
+	    value: function updateCurrentScore(newCurrentScore) {
+	      if (this.currentScoreElement) {
+	        this.currentScoreElement.innerText = newCurrentScore;
+	      }
+	    }
+	  }, {
+	    key: 'updateHighScore',
+	    value: function updateHighScore(newHighScore) {
+	      if (this.highScoreElement) {
+	        this.highScoreElement.innerText = newHighScore;
+	      }
+	    }
+	  }, {
+	    key: 'hideStartGamePopup',
+	    value: function hideStartGamePopup() {
+	      this.startGamePopup.className = "popup hidden";
+	    }
+	  }, {
+	    key: 'showGameOverPopup',
+	    value: function showGameOverPopup(newHighScore) {
+	      this.gameOverPopup.className = "popup";
+	      this.gameOverScore.innerText = this.currentScoreElement.innerText;
+	      if (newHighScore) {
+	        this.gameOverHighScoreMessage.innerText = "New High Score!";
+	      }
+	    }
+	  }, {
+	    key: 'hideGameOverPopup',
+	    value: function hideGameOverPopup() {
+	      this.gameOverPopup.className = "popup hidden";
+	    }
+	  }, {
+	    key: 'toggleAboutPopup',
+	    value: function toggleAboutPopup() {
+	      if (this.aboutPopup.className === "popup") {
+	        this.game.setPaused(false);
+	        this.aboutPopup.className = "popup hidden";
+	      } else {
+	        this.game.setPaused(true);
+	        this.aboutPopup.className = "popup";
+	      }
+	    }
+	  }, {
+	    key: 'startGame',
+	    value: function startGame() {
+	      this.game.initialize(true);
+	      this.hideStartGamePopup();
+	      this.hideGameOverPopup();
+	    }
+	  }]);
+	
+	  return UIHandler;
+	}();
+	
+	exports.default = UIHandler;
+
+/***/ },
 /* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _diver = __webpack_require__(10);
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var KEYCODE_LEFT = 37,
+	    KEYCODE_A = 65,
+	    KEYCODE_RIGHT = 39,
+	    KEYCODE_D = 68,
+	    KEYCODE_UP = 38,
+	    KEYCODE_W = 87,
+	    KEYCODE_DOWN = 40,
+	    KEYCODE_S = 83,
+	    KEYCODE_SPACE = 32;
+	
+	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE];
+	
+	var DIAG_MOVE_AMOUNT = Math.sqrt(_diver.DIVER_MOVE_AMOUNT * _diver.DIVER_MOVE_AMOUNT / 2);
+	
+	var KeyHandler = function () {
+		function KeyHandler(game, stage) {
+			_classCallCheck(this, KeyHandler);
+	
+			this.game = game;
+			this.stage = stage;
+			this.reset();
+	
+			this.handleKeyDown = this.handleKeyDown.bind(this);
+			this.handleKeyUp = this.handleKeyUp.bind(this);
+			this.handleTick = this.handleTick.bind(this);
+		}
+	
+		_createClass(KeyHandler, [{
+			key: 'reset',
+			value: function reset() {
+				var _this = this;
+	
+				this.keysDown = {};
+				controlKeys.forEach(function (key) {
+					_this.keysDown[key] = false;
+				});
+			}
+		}, {
+			key: 'handleKeyDown',
+			value: function handleKeyDown(e) {
+				if (e.keyCode === KEYCODE_SPACE && !this.keysDown[e.keyCode]) {
+					this.game.fireLaser();
+				}
+				if (controlKeys.includes(e.keyCode)) {
+					e.preventDefault();
+					this.keysDown[e.keyCode] = true;
+				}
+			}
+		}, {
+			key: 'handleKeyUp',
+			value: function handleKeyUp(e) {
+				if (controlKeys.includes(e.keyCode)) {
+					e.preventDefault();
+					this.keysDown[e.keyCode] = false;
+				}
+			}
+		}, {
+			key: 'handleTick',
+			value: function handleTick(e) {
+				if (e.paused) return;
+	
+				var diagMove = false;
+				if (this.leftUpPressed()) {
+					this.game.moveDiver(-DIAG_MOVE_AMOUNT, -DIAG_MOVE_AMOUNT);
+					diagMove = true;
+				}
+				if (this.rightUpPressed()) {
+					this.game.moveDiver(DIAG_MOVE_AMOUNT, -DIAG_MOVE_AMOUNT);
+					diagMove = true;
+				}
+				if (this.leftDownPressed()) {
+					this.game.moveDiver(-DIAG_MOVE_AMOUNT, DIAG_MOVE_AMOUNT);
+					diagMove = true;
+				}
+				if (this.rightDownPressed()) {
+					this.game.moveDiver(DIAG_MOVE_AMOUNT, DIAG_MOVE_AMOUNT);
+					diagMove = true;
+				}
+	
+				if (!diagMove) {
+					if (this.leftPressed()) {
+						this.game.moveDiver(-_diver.DIVER_MOVE_AMOUNT, 0);
+					}
+					if (this.rightPressed()) {
+						this.game.moveDiver(_diver.DIVER_MOVE_AMOUNT, 0);
+					}
+	
+					if (this.upPressed()) {
+						this.game.moveDiver(0, -_diver.DIVER_MOVE_AMOUNT);
+					}
+	
+					if (this.downPressed()) {
+						this.game.moveDiver(0, _diver.DIVER_MOVE_AMOUNT);
+					}
+				}
+			}
+		}, {
+			key: 'leftPressed',
+			value: function leftPressed() {
+				return this.keysDown[KEYCODE_LEFT] || this.keysDown[KEYCODE_A];
+			}
+		}, {
+			key: 'rightPressed',
+			value: function rightPressed() {
+				return this.keysDown[KEYCODE_RIGHT] || this.keysDown[KEYCODE_D];
+			}
+		}, {
+			key: 'upPressed',
+			value: function upPressed() {
+				return this.keysDown[KEYCODE_UP] || this.keysDown[KEYCODE_W];
+			}
+		}, {
+			key: 'downPressed',
+			value: function downPressed() {
+				return this.keysDown[KEYCODE_DOWN] || this.keysDown[KEYCODE_S];
+			}
+		}, {
+			key: 'leftUpPressed',
+			value: function leftUpPressed() {
+				return this.leftPressed() && this.upPressed();
+			}
+		}, {
+			key: 'rightUpPressed',
+			value: function rightUpPressed() {
+				return this.rightPressed() && this.upPressed();
+			}
+		}, {
+			key: 'leftDownPressed',
+			value: function leftDownPressed() {
+				return this.leftPressed() && this.downPressed();
+			}
+		}, {
+			key: 'rightDownPressed',
+			value: function rightDownPressed() {
+				return this.rightPressed() && this.downPressed();
+			}
+		}, {
+			key: 'attachListeners',
+			value: function attachListeners() {
+				document.addEventListener('keydown', this.handleKeyDown);
+				document.addEventListener('keyup', this.handleKeyUp);
+			}
+		}, {
+			key: 'removeListeners',
+			value: function removeListeners() {
+				document.removeEventListener('keydown', this.handleKeyDown);
+				document.removeEventListener('keyup', this.handleKeyUp);
+			}
+		}]);
+	
+		return KeyHandler;
+	}();
+	
+	exports.default = KeyHandler;
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.DIVER_MOVE_AMOUNT = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _game_object = __webpack_require__(5);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(6);
+	
+	var _laser_beam = __webpack_require__(11);
+	
+	var _laser_beam2 = _interopRequireDefault(_laser_beam);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var DIVER_MOVE_AMOUNT = exports.DIVER_MOVE_AMOUNT = 3;
+	
+	var DIVER_SHEET = (0, _sprite_sheets.createDiverSpriteSheet)();
+	
+	var Diver = function (_GameObject) {
+	  _inherits(Diver, _GameObject);
+	
+	  function Diver(options) {
+	    _classCallCheck(this, Diver);
+	
+	    var diverSprite = new _createjs2.default.Sprite(DIVER_SHEET);
+	
+	    var defaultOptions = {
+	      x: 200,
+	      y: 580,
+	      width: 16,
+	      height: 18,
+	      sprite: diverSprite
+	    };
+	    return _possibleConstructorReturn(this, (Diver.__proto__ || Object.getPrototypeOf(Diver)).call(this, Object.assign(defaultOptions, options), { minY: 520 }));
+	  }
+	
+	  _createClass(Diver, [{
+	    key: 'fireLaser',
+	    value: function fireLaser() {
+	      var laserBeam = new _laser_beam2.default({
+	        x: this.centerX() - 1,
+	        y: this.getY() - 12
+	      });
+	      return laserBeam;
+	    }
+	  }]);
+	
+	  return Diver;
+	}(_game_object2.default);
+	
+	exports.default = Diver;
+
+/***/ },
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1224,11 +1487,11 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(8);
+	var _game_object = __webpack_require__(5);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
-	var _sprite_sheets = __webpack_require__(4);
+	var _sprite_sheets = __webpack_require__(6);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -1271,7 +1534,7 @@
 	exports.default = LaserBeam;
 
 /***/ },
-/* 10 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1282,7 +1545,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _tone = __webpack_require__(11);
+	var _tone = __webpack_require__(13);
 	
 	var _tone2 = _interopRequireDefault(_tone);
 	
@@ -1380,7 +1643,7 @@
 	exports.default = SoundHandler;
 
 /***/ },
-/* 11 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function(root, factory){
@@ -23303,7 +23566,7 @@
 	}));
 
 /***/ },
-/* 12 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -23318,19 +23581,19 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _sprite_sheets = __webpack_require__(4);
+	var _sprite_sheets = __webpack_require__(6);
 	
-	var _util = __webpack_require__(13);
+	var _util = __webpack_require__(15);
 	
-	var _diver = __webpack_require__(7);
+	var _diver = __webpack_require__(10);
 	
 	var _diver2 = _interopRequireDefault(_diver);
 	
-	var _head = __webpack_require__(14);
+	var _head = __webpack_require__(3);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(15);
+	var _segment = __webpack_require__(4);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
@@ -23548,7 +23811,7 @@
 	exports.default = Board;
 
 /***/ },
-/* 13 */
+/* 15 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -23559,268 +23822,6 @@
 	var getRandomInt = exports.getRandomInt = function getRandomInt(min, max) {
 	  return Math.floor(Math.random() * (max - min + 1)) + min;
 	};
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _segment = __webpack_require__(15);
-	
-	var _segment2 = _interopRequireDefault(_segment);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var HEAD_SHEET = (0, _sprite_sheets.createHeadSpriteSheet)();
-	
-	var Head = function (_Segment) {
-	  _inherits(Head, _Segment);
-	
-	  function Head(options, moveBounds) {
-	    _classCallCheck(this, Head);
-	
-	    var startFrame = options.direction === _segment.LEFT ? "moveLeft" : "moveRight";
-	    var headSprite = new _createjs2.default.Sprite(HEAD_SHEET, startFrame);
-	
-	    return _possibleConstructorReturn(this, (Head.__proto__ || Object.getPrototypeOf(Head)).call(this, options, moveBounds, headSprite));
-	  }
-	
-	  _createClass(Head, null, [{
-	    key: 'createHeadFromSegment',
-	    value: function createHeadFromSegment(segment) {
-	      var head = new Head({
-	        x: segment.getX(),
-	        y: segment.getY(),
-	        direction: segment.direction,
-	        verticalDirection: segment.verticalDirection,
-	        velocityX: segment.velocityX
-	      }, Object.assign({}, segment.moveBounds));
-	      if (segment.next) head.connectNext(segment.next);
-	      return head;
-	    }
-	  }]);
-	
-	  return Head;
-	}(_segment2.default);
-	
-	exports.default = Head;
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.INITIAL_VELOCITY_X = exports.LEFT = exports.RIGHT = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _game_object = __webpack_require__(8);
-	
-	var _game_object2 = _interopRequireDefault(_game_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var SEGMENT_SHEET = (0, _sprite_sheets.createSegmentSpriteSheet)();
-	
-	var RIGHT = exports.RIGHT = 'RIGHT';
-	var LEFT = exports.LEFT = 'LEFT';
-	var DOWN = 'DOWN';
-	var UP = 'UP';
-	var VERTICAL_FROM_RIGHT = 'VERTICAL_FROM_RIGHT';
-	var VERTICAL_FROM_LEFT = 'VERTICAL_FROM_LEFT';
-	
-	var INITIAL_VELOCITY_X = exports.INITIAL_VELOCITY_X = 2;
-	var VELOCITY_Y = 10;
-	
-	var Segment = function (_GameObject) {
-	  _inherits(Segment, _GameObject);
-	
-	  function Segment(options, moveBounds, alternateSprite) {
-	    _classCallCheck(this, Segment);
-	
-	    var segmentSprite = void 0;
-	    if (alternateSprite) {
-	      segmentSprite = alternateSprite;
-	    } else {
-	      var startFrame = options.direction === LEFT ? "moveLeft" : "moveRight";
-	      segmentSprite = alternateSprite ? alternateSprite : new _createjs2.default.Sprite(SEGMENT_SHEET, startFrame);
-	    }
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: 16,
-	      height: 20,
-	      sprite: segmentSprite
-	    };
-	
-	    var _this = _possibleConstructorReturn(this, (Segment.__proto__ || Object.getPrototypeOf(Segment)).call(this, Object.assign(defaultOptions, options), moveBounds));
-	
-	    _this.direction = options.direction || RIGHT;
-	    _this.verticalDirection = options.verticalDirection || DOWN;
-	    _this.velocityX = options.velocityX || INITIAL_VELOCITY_X;
-	
-	    _this.prev = null;
-	    _this.next = null;
-	    return _this;
-	  }
-	
-	  _createClass(Segment, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      var collided = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-	
-	      switch (this.direction) {
-	        case RIGHT:
-	          if (this.moveBounds.maxX - this.getMaxX() > this.velocityX && !collided) {
-	            this.moveRight();
-	          } else {
-	            this.moveVerticalFromRight();
-	          }
-	          break;
-	        case LEFT:
-	          if (this.getX() - this.moveBounds.minX > this.velocityX && !collided) {
-	            this.moveLeft();
-	          } else {
-	            this.moveVerticalFromLeft();
-	          }
-	          break;
-	        case VERTICAL_FROM_RIGHT:
-	          this.moveLeftFromVertical();
-	          break;
-	        case VERTICAL_FROM_LEFT:
-	          this.moveRightFromVertical();
-	          break;
-	      }
-	      if (this.verticalDirection === DOWN && this.moveBounds.maxY - this.getMaxY() < 10) {
-	        this.verticalDirection = UP;
-	        this.moveBounds.minY = 520;
-	      } else if (this.verticalDirection === UP && this.getY() - this.moveBounds.minY < 10) {
-	        this.verticalDirection = DOWN;
-	      }
-	    }
-	  }, {
-	    key: 'moveRight',
-	    value: function moveRight() {
-	      this.changeX(this.velocityX);
-	      this.direction = RIGHT;
-	    }
-	  }, {
-	    key: 'moveLeft',
-	    value: function moveLeft() {
-	      this.changeX(-this.velocityX);
-	      this.direction = LEFT;
-	    }
-	  }, {
-	    key: 'moveVerticalFromRight',
-	    value: function moveVerticalFromRight() {
-	      var vertChange = void 0;
-	      if (this.verticalDirection === DOWN) {
-	        vertChange = VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveDown');
-	      } else {
-	        vertChange = -VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveUp');
-	      }
-	      this.changeX(this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = VERTICAL_FROM_RIGHT;
-	    }
-	  }, {
-	    key: 'moveVerticalFromLeft',
-	    value: function moveVerticalFromLeft() {
-	      var vertChange = void 0;
-	      if (this.verticalDirection === DOWN) {
-	        vertChange = VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveDown');
-	      } else {
-	        vertChange = -VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveUp');
-	      }
-	      this.changeX(-this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = VERTICAL_FROM_LEFT;
-	    }
-	  }, {
-	    key: 'moveRightFromVertical',
-	    value: function moveRightFromVertical() {
-	      var vertChange = this.verticalDirection === DOWN ? VELOCITY_Y : -VELOCITY_Y;
-	      this.sprite.gotoAndPlay('moveRight');
-	      this.changeX(this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = RIGHT;
-	    }
-	  }, {
-	    key: 'moveLeftFromVertical',
-	    value: function moveLeftFromVertical() {
-	      var vertChange = this.verticalDirection === DOWN ? VELOCITY_Y : -VELOCITY_Y;
-	      this.sprite.gotoAndPlay('moveLeft');
-	      this.changeX(-this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = LEFT;
-	    }
-	  }, {
-	    key: 'connectNext',
-	    value: function connectNext(segment) {
-	      var oldNext = this.next;
-	      this.next = segment;
-	      if (segment.prev) segment.prev.next = null;
-	      segment.prev = this;
-	      if (oldNext) {
-	        oldNext.prev = segment;
-	        segment.next = oldNext;
-	      }
-	    }
-	  }, {
-	    key: 'destroy',
-	    value: function destroy() {
-	      if (this.next) this.next.prev = null;
-	      if (this.prev) this.prev.next = null;
-	      this.next = null;
-	      this.prev = null;
-	      this.destroySprite();
-	    }
-	  }]);
-	
-	  return Segment;
-	}(_game_object2.default);
-	
-	exports.default = Segment;
 
 /***/ },
 /* 16 */
@@ -23838,11 +23839,11 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(8);
+	var _game_object = __webpack_require__(5);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
-	var _sprite_sheets = __webpack_require__(4);
+	var _sprite_sheets = __webpack_require__(6);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
