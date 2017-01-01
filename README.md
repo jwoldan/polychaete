@@ -1,57 +1,45 @@
 # Polychaete
 
-## Background
+[Polychaete Live](http://jwoldan/polychaete)
 
-Polychaete (pronounced "polykeet") is a Centipede-inspired arcade-style game.  The player's character can move within the bottom area of the screen, while a polychaete (a type of sea worm) starts at the top of the screen, moving back and forth and descending one row each time it hits a side or sea sponge.  The player can shoot to destroy the sea sponges or individual segments of the polychaete.  When the player destroys middle segments of a polychaete, it splits into two.  The player scores points based on the number of sea sponges and polychaeta (plural of polychaete) they destroy.
+## Features and Implementation
 
-## Functionality & MVP
+### Technologies
 
-Users will be able to:
+Polychaete is primarily written in "vanilla" ES6 JavaScript.  [Webpack](https://webpack.github.io) and [Babel](https://babeljs.io) are used to transpile from ES6 for greater browser compatibility.  External dependencies include [EaselJS](http://www.createjs.com/easeljs) for sprite animation and movement, [Tone.js](https://github.com/Tonejs/Tone.js) for synth-based sounds, and [js-cookie](https://github.com/js-cookie/js-cookie) for easier cookie handling.
 
-- [ ] Start, pause, and reset the game
-- [ ] Move their character and fire at polychaeta and sea sponges
-- [ ] View their current score, as well as the (local) high score
+### Game Objects
 
-In addition, this project will include:
+All in-game characters/objects extend the `GameObject` base class.  This provides base size, movement/positioning, and sprite functionality.  Functionality unique to specific subclasses includes the following:
 
-- [ ] An about modal explaining the rules and controls of the game
-- [ ] A production README
+- `Diver`: Laser firing ability.
+- `LaserBeam`: laser beam-specific vertical movement.
+- `SeaSponge`: Handling of multiple laser beam hits.
+- `Segment`: Polychaete segment movement and connection to adjacent segments (linked-list style).
+- `Head`: Class/static method to create a new Head based on an existing Segment.
 
-## Wireframes
+### User Interface
 
-This app will consist of a single screen with the game board and a link to display the rules and controls modal.  All controls will be keyboard based.
+- The `Game` class manages the overall game state, including movement and collision detection.  
+- The `Board` class maintains position and rendering of the various game objects on the Canvas, as well as addition and removal of those objects.
+- The `KeyHandler` provides a keyboard-based user interface to move the diver and fire laser beams.
+- The `UIHandler` manages state and interactivity of dynamic HTML elements other than the canvas itself, such as popups and buttons.
+- The `SoundHandler` implements sounds for various in-game actions.
 
-![Wireframe](docs/wireframe.png)
+## Running Polychaete
 
-## Architecture and Technologies
+### Prerequisites
 
-This project will be implemented with the following technologies:
+An up to date version of [npm](https://www.npmjs.com).
 
- * Vanilla JavaScript
- * Easel.js with HTML Canvas for rendering the game canvas
- * Tone.js for in-game sounds
- * Webpack to bundle the various files and scripts
+### Project Setup
 
-The following script files will be created:
+1. `git clone https://github.com/jwoldan/polychaete.git`
+2. `cd polychaete`
+3. `npm install`
+4. `npm run webpack-once`
 
- * `game_object.js` will be a base class from which on screen game objects will inherit, which enables tracking of position and movement.
- * `polychaete.js` will represent the polychaeta, including movement and splitting when shot by the player.
- * `sea_sponge.js` will represent the sea sponge objects.  
- * `player.js` will track the player character's position and handle their shooting ability.
- * `board.js` will handle the logic for creating, updating, and rendering the board state, as well as responding to user input.
-
-## Implementation Timeline
-
-**Day 1:** Set up project and render Polychaete, Sea Sponge, and Player to the Canvas.
-
-**Day 2:** Implement player movement, shooting, and controls.
-
-**Day 3:** Implement polychaete movement and splitting.
-
-**Day 4:** Polish project, add sounds and additional levels as time allows.
-
-## Bonus Features
-
-- [ ] Add additional objects/characters
-- [ ] Implement in-game music
-- [ ] Allow player to choose from multiple board dimensions
+### Starting a Local Server
+1. `npm install -g http-server` (This globally installs a simple web server to serve the page locally)
+2. `http-server`
+3. Visit `http://localhost:8080/`
