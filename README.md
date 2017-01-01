@@ -8,13 +8,13 @@ Polychaete (pronounced "polykeet") is a Centipede-inspired arcade-style game.  T
 
 Users will be able to:
 
-- [ ] Start, pause, and reset the game
-- [ ] Move their character and fire at polychaeta and sea sponges
-- [ ] View their current score, as well as the (local) high score
+- [x] Start, pause, and reset the game
+- [x] Move their character and fire at polychaeta and sea sponges
+- [x] View their current score, as well as the (local) high score
 
 In addition, this project will include:
 
-- [ ] An about modal explaining the rules and controls of the game
+- [x] An about modal explaining the rules and controls of the game
 - [ ] A production README
 
 ## Wireframes
