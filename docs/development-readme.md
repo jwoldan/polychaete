@@ -15,7 +15,7 @@ Users will be able to:
 In addition, this project will include:
 
 - [x] An about modal explaining the rules and controls of the game
-- [ ] A production README
+- [x] A production README
 
 ## Wireframes
 
