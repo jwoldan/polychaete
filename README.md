@@ -8,6 +8,8 @@
 
 Polychaete is primarily written in "vanilla" ES6 JavaScript.  [Webpack](https://webpack.github.io) and [Babel](https://babeljs.io) are used to transpile from ES6 for greater browser compatibility.  External dependencies include [EaselJS](http://www.createjs.com/easeljs) for sprite animation and movement, [Tone.js](https://github.com/Tonejs/Tone.js) for synth-based sounds, and [js-cookie](https://github.com/js-cookie/js-cookie) for easier cookie handling.
 
+See the [Development README](docs/development-readme.md) to learn more about the development process.
+
 ### Game Objects
 
 All in-game characters/objects extend the `GameObject` base class.  This provides base size, movement/positioning, and sprite functionality.  Functionality unique to specific subclasses includes the following:
