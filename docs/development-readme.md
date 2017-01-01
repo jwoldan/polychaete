@@ -21,7 +21,7 @@ In addition, this project will include:
 
 This app will consist of a single screen with the game board and a link to display the rules and controls modal.  All controls will be keyboard based.
 
-![Wireframe](docs/wireframe.png)
+![Wireframe](wireframe.png)
 
 ## Architecture and Technologies
 
