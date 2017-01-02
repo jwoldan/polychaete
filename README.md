@@ -1,6 +1,6 @@
 # Polychaete
 
-[Polychaete Live](http://jwoldan/polychaete)
+[Polychaete Live](http://jwoldan.net/polychaete)
 
 ## Features and Implementation
 
