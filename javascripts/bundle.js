@@ -102,21 +102,21 @@
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _util = __webpack_require__(13);
+	var _util = __webpack_require__(5);
 	
-	var _ui_handler = __webpack_require__(5);
+	var _ui_handler = __webpack_require__(6);
 	
 	var _ui_handler2 = _interopRequireDefault(_ui_handler);
 	
-	var _key_handler = __webpack_require__(6);
+	var _key_handler = __webpack_require__(7);
 	
 	var _key_handler2 = _interopRequireDefault(_key_handler);
 	
-	var _sound_handler = __webpack_require__(10);
+	var _sound_handler = __webpack_require__(11);
 	
 	var _sound_handler2 = _interopRequireDefault(_sound_handler);
 	
-	var _board = __webpack_require__(12);
+	var _board = __webpack_require__(13);
 	
 	var _board2 = _interopRequireDefault(_board);
 	
@@ -133,6 +133,8 @@
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
 	var _spider = __webpack_require__(18);
+	
+	var _shrimp = __webpack_require__(19);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -160,6 +162,7 @@
 	    this.updatePositions = this.updatePositions.bind(this);
 	    this.checkCollisions = this.checkCollisions.bind(this);
 	    this.tryAddSpider = this.tryAddSpider.bind(this);
+	    this.tryAddShrimp = this.tryAddShrimp.bind(this);
 	  }
 	
 	  _createClass(Game, [{
@@ -176,8 +179,9 @@
 	      if (startGame) {
 	        board.addDiver();
 	        this.started = true;
+	        this.soundHandler.pause(false);
 	      }
-	      board.addSeaSponges(20);
+	      board.addSeaSponges(30);
 	      board.addPolychaete(this.startLength, _segment.INITIAL_VELOCITY_X);
 	
 	      this.paused = false;
@@ -192,6 +196,7 @@
 	      _createjs2.default.Ticker.on("tick", this.checkCollisions);
 	      _createjs2.default.Ticker.on("tick", this.updatePositions);
 	      _createjs2.default.Ticker.on("tick", this.tryAddSpider);
+	      _createjs2.default.Ticker.on("tick", this.tryAddShrimp);
 	    }
 	  }, {
 	    key: 'moveDiver',
@@ -220,29 +225,33 @@
 	    key: 'updatePositions',
 	    value: function updatePositions(e) {
 	      if (e.paused) return;
-	
-	      var idxsToRemove = [];
-	      var board = this.board;
-	
-	      board.laserBeams.forEach(function (beam, idx) {
+	      this.updateLaserBeamPositions();
+	      this.updateSegmentPositions();
+	      this.updateShrimpPositions();
+	      this.updateSpiderPosition();
+	    }
+	  }, {
+	    key: 'updateLaserBeamPositions',
+	    value: function updateLaserBeamPositions() {
+	      var laserBeams = this.board.laserBeams;
+	      var laserIdxsToRemove = [];
+	      laserBeams.forEach(function (beam, idx) {
 	        beam.updatePosition();
 	        if (beam.getY() <= -beam.getHeight()) {
-	          idxsToRemove.push(idx);
+	          laserIdxsToRemove.push(idx);
 	        }
 	      });
+	      this.removeLaserBeams(laserIdxsToRemove);
+	    }
+	  }, {
+	    key: 'updateSegmentPositions',
+	    value: function updateSegmentPositions() {
+	      var _this = this;
 	
-	      if (board.segments.length > 0 && this.started) {
-	        var maxVelocity = board.segments.reduce(function (a, b) {
-	          return a.velocityX > b.velocityX ? a.velocityX : b.velocityX;
-	        }, this);
-	        if (_createjs2.default.Ticker.getTicks() % Math.round(32 / maxVelocity) === 0) {
-	          this.soundHandler.playSegmentStep();
-	        }
-	      }
-	
-	      board.segments.forEach(function (segment) {
+	      var segments = this.board.segments;
+	      segments.forEach(function (segment) {
 	        var collided = false;
-	        board.sponges.forEach(function (sponge) {
+	        _this.board.sponges.forEach(function (sponge) {
 	          if (segment.overlaps(sponge)) {
 	            collided = true;
 	          }
@@ -250,108 +259,245 @@
 	        segment.updatePosition(collided);
 	      });
 	
-	      if (board.spider) {
-	        var spider = board.spider;
-	        spider.updatePosition();
-	        if (!spider.isPartiallyInMoveBounds()) board.removeSpider();
+	      if (segments.length > 0 && this.started) {
+	        var maxVelocity = segments.reduce(function (a, b) {
+	          return a.velocityX > b.velocityX ? a.velocityX : b.velocityX;
+	        }, this);
+	        if (_createjs2.default.Ticker.getTicks() % Math.round(32 / maxVelocity) === 0) {
+	          this.soundHandler.playSegmentStep();
+	        }
 	      }
+	    }
+	  }, {
+	    key: 'updateShrimpPositions',
+	    value: function updateShrimpPositions() {
+	      var _this2 = this;
 	
-	      this.removeLaserBeams(idxsToRemove);
+	      var shrimps = this.board.shrimp;
+	      var shrimpIdxsToRemove = [];
+	      shrimps.forEach(function (shrimp, idx) {
+	        shrimp.updatePosition();
+	        if (!shrimp.isPartiallyInMoveBounds()) {
+	          shrimpIdxsToRemove.push(idx);
+	        } else {
+	          if (Math.random() < .01) {
+	            var sponges = _this2.board.sponges;
+	            var collided = false;
+	            sponges.forEach(function (sponge) {
+	              if (shrimp.overlaps(sponge)) collided = true;
+	            });
+	            if (!collided) _this2.board.addSeaSponge(shrimp.dropSeaSponge());
+	          }
+	        }
+	      });
+	      this.removeShrimp(shrimpIdxsToRemove);
+	    }
+	  }, {
+	    key: 'updateSpiderPosition',
+	    value: function updateSpiderPosition() {
+	      var spider = this.board.spider;
+	      if (spider) {
+	        spider.updatePosition();
+	        if (!spider.isPartiallyInMoveBounds()) this.removeSpider();
+	      }
 	    }
 	  }, {
 	    key: 'checkCollisions',
 	    value: function checkCollisions(e) {
-	      var _this = this;
-	
 	      if (e.paused) return;
-	
-	      var board = this.board;
-	      var diver = board.diver;
-	      var spider = board.spider;
-	      var beamIdxsToRemove = [];
-	      var segmentIdxsToRemove = [];
-	      var spongeIdxsToRemove = [];
-	      var removeSpider = false;
-	
 	      if (this.started) {
-	        board.segments.forEach(function (segment) {
-	          if (segment.overlaps(diver)) {
-	            _this.endGame();
+	        this.checkSegmentDiverCollisions();
+	        this.checkSpiderCollisions();
+	        this.checkShrimpDiverCollisions();
+	      }
+	      if (this.started) {
+	        this.checkLaserBeamCollisions();
+	      }
+	      this.tryAddPolychaete();
+	    }
+	  }, {
+	    key: 'checkSegmentDiverCollisions',
+	    value: function checkSegmentDiverCollisions() {
+	      var _this3 = this;
+	
+	      this.board.segments.forEach(function (segment) {
+	        if (segment.overlaps(_this3.board.diver)) {
+	          _this3.endGame();
+	        }
+	      });
+	    }
+	  }, {
+	    key: 'checkSpiderCollisions',
+	    value: function checkSpiderCollisions() {
+	      var spider = this.board.spider;
+	      var spongeIdxsToRemove = [];
+	
+	      if (spider) {
+	        if (spider.overlaps(this.board.diver)) {
+	          this.endGame();
+	        }
+	        this.board.sponges.forEach(function (sponge, spongeIdx) {
+	          if (spider.overlaps(sponge)) {
+	            spongeIdxsToRemove.push(spongeIdx);
 	          }
 	        });
-	        if (spider) {
-	          if (spider.overlaps(diver)) {
-	            this.endGame();
-	          }
-	        }
+	        this.removeSeaSponges(spongeIdxsToRemove);
 	      }
+	    }
+	  }, {
+	    key: 'checkShrimpDiverCollisions',
+	    value: function checkShrimpDiverCollisions() {
+	      var _this4 = this;
 	
-	      board.laserBeams.forEach(function (beam, beamIdx) {
+	      this.board.shrimp.forEach(function (shrimp) {
+	        if (shrimp.overlaps(_this4.board.diver)) {
+	          _this4.endGame();
+	        }
+	      });
+	    }
+	  }, {
+	    key: 'checkLaserBeamCollisions',
+	    value: function checkLaserBeamCollisions() {
+	      var _this5 = this;
+	
+	      var laserBeams = this.board.laserBeams;
+	      var beamIdxsToRemove = [];
+	      var spongeIdxsToRemove = [];
+	      var segmentIdxsToRemove = [];
+	      var shrimpIdxsToRemove = [];
+	
+	      laserBeams.forEach(function (beam, beamIdx) {
 	        // only allow a laser beam a single hit
 	        var hit = false;
 	
-	        // check for collision with sea sponges
-	        board.sponges.forEach(function (sponge, spongeIdx) {
-	          if (beam.overlaps(sponge) && !hit) {
-	            beamIdxsToRemove.push(beamIdx);
-	            sponge.handleHit();
-	            if (sponge.hits === 0) {
-	              spongeIdxsToRemove.push(spongeIdx);
-	              _this.incrementScore(1);
-	              _this.soundHandler.playSeaSpongeDestroy();
-	            } else {
-	              _this.soundHandler.playSeaSpongeHit();
-	            }
-	            hit = true;
+	        var spongeIdx = _this5.checkLaserBeamSpongeCollisions(beam);
+	        if (spongeIdx !== false) {
+	          if (spongeIdx !== true) {
+	            spongeIdxsToRemove.push(spongeIdx);
 	          }
-	        });
+	          beamIdxsToRemove.push(beamIdx);
+	          hit = true;
+	        }
 	
-	        // check for collision with Polychaete segments
-	        board.segments.forEach(function (segment, segmentIdx) {
-	          if (beam.overlaps(segment) && !hit) {
-	            if (segment instanceof _head2.default) {
-	              _this.incrementScore(100);
-	            } else {
-	              _this.incrementScore(10);
-	            }
-	            _this.soundHandler.playSegmentHit();
-	            beamIdxsToRemove.push(beamIdx);
+	        if (!hit) {
+	          var segmentIdx = _this5.checkLaserBeamSegmentCollisions(beam);
+	          if (segmentIdx !== false) {
 	            segmentIdxsToRemove.push(segmentIdx);
+	            beamIdxsToRemove.push(beamIdx);
 	            hit = true;
 	          }
-	        });
+	        }
 	
-	        if (!hit && spider && beam.overlaps(spider)) {
-	          if (spider.getY() > 500) {
-	            _this.incrementScore(300);
-	          } else if (spider.getY() > 400) {
-	            _this.incrementScore(600);
-	          } else {
-	            _this.incrementScore(900);
+	        if (!hit) {
+	          var spiderHit = _this5.checkLaserBeamSpiderCollisions(beam);
+	          if (spiderHit) {
+	            _this5.removeSpider();
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
 	          }
-	          _this.soundHandler.playSpiderHit();
-	          removeSpider = true;
+	        }
+	
+	        if (!hit) {
+	          var shrimpIdx = _this5.checkLaserBeamShrimpCollisions(beam);
+	          if (shrimpIdx !== false) {
+	            shrimpIdxsToRemove.push(shrimpIdx);
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
+	          }
 	        }
 	      });
 	
 	      this.removeLaserBeams(beamIdxsToRemove);
-	      this.removeSegments(segmentIdxsToRemove);
 	      this.removeSeaSponges(spongeIdxsToRemove);
+	      this.removeSegments(segmentIdxsToRemove);
+	      this.removeShrimp(shrimpIdxsToRemove);
+	    }
+	  }, {
+	    key: 'checkLaserBeamSpongeCollisions',
+	    value: function checkLaserBeamSpongeCollisions(beam) {
+	      var sponges = this.board.sponges;
+	      for (var i = 0; i < sponges.length; i++) {
+	        if (beam.overlaps(sponges[i])) {
+	          sponges[i].handleHit();
+	          if (sponges[i].hits === 0) {
+	            this.incrementScore(1);
+	            this.soundHandler.playSeaSpongeDestroy();
+	            return i;
+	          } else {
+	            this.soundHandler.playSeaSpongeHit();
+	            return true;
+	          }
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamSegmentCollisions',
+	    value: function checkLaserBeamSegmentCollisions(beam) {
+	      var segments = this.board.segments;
+	      for (var i = 0; i < segments.length; i++) {
+	        if (beam.overlaps(segments[i])) {
+	          if (segments[i] instanceof _head2.default) {
+	            this.incrementScore(100);
+	          } else {
+	            this.incrementScore(10);
+	          }
+	          this.soundHandler.playSegmentHit();
+	          return i;
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamSpiderCollisions',
+	    value: function checkLaserBeamSpiderCollisions(beam) {
+	      var spider = this.board.spider;
+	      if (spider && beam.overlaps(spider)) {
+	        if (spider.getY() > 500) {
+	          this.incrementScore(300);
+	        } else if (spider.getY() > 400) {
+	          this.incrementScore(600);
+	        } else {
+	          this.incrementScore(900);
+	        }
+	        this.soundHandler.playSpiderHit();
+	        return true;
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamShrimpCollisions',
+	    value: function checkLaserBeamShrimpCollisions(beam) {
+	      var shrimp = this.board.shrimp;
+	      for (var i = 0; i < shrimp.length; i++) {
+	        if (beam.overlaps(shrimp[i])) {
+	          this.incrementScore(200);
+	          this.soundHandler.playShrimpHit();
+	          return i;
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'tryAddPolychaete',
+	    value: function tryAddPolychaete() {
+	      var _this6 = this;
 	
-	      if (removeSpider) board.removeSpider();
+	      var board = this.board;
 	
 	      if (board.segments.length === 0) {
 	        (function () {
-	          _this.startLength -= 1;
-	          if (_this.startLength === 0) {
-	            _this.startLength = _this.initialStartLength;
+	          _this6.startLength -= 1;
+	          if (_this6.startLength === 0) {
+	            _this6.startLength = _this6.initialStartLength;
 	          }
-	          if (_this.level < 6 && _this.startLength % 3 === 0) {
-	            _this.level += 1;
+	          if (_this6.level < 6 && _this6.startLength % 3 === 0) {
+	            _this6.level += 1;
+	            _this6.soundHandler.incrementBPM(10);
 	          }
-	          var velocityX = _segment.INITIAL_VELOCITY_X + _this.level;
-	          board.addPolychaete(_this.startLength, velocityX);
-	          if (_this.startLength !== _this.initialStartLength) {
+	          var velocityX = _segment.INITIAL_VELOCITY_X + _this6.level;
+	          board.addPolychaete(_this6.startLength, velocityX);
+	          if (_this6.startLength !== _this6.initialStartLength) {
 	            window.setTimeout(function () {
 	              board.addPolychaete(1, velocityX + 1);
 	            }, Math.random() * 1000 + 500);
@@ -367,17 +513,35 @@
 	      if (this.started && !board.spider && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
 	        var random = (0, _util.getRandomInt)(0, 8);
 	        if (random <= this.level) {
-	          board.addSpider({ maximumVelocity: _spider.SPIDER_MIN_VELOCITY + this.level });
+	          board.addSpider({
+	            maximumVelocity: _spider.SPIDER_MIN_VELOCITY + 2 * this.level
+	          });
+	          this.soundHandler.startSpiderSequence();
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'tryAddShrimp',
+	    value: function tryAddShrimp(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (this.started && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === _sprite_sheets.FPS / 4) {
+	        var random = (0, _util.getRandomInt)(0, 8);
+	        if (random <= this.level) {
+	          board.addShrimp({
+	            velocityY: _shrimp.SHRIMP_MIN_VELOCITY + this.level
+	          });
+	          this.soundHandler.startShrimpOscillator(this.level);
 	        }
 	      }
 	    }
 	  }, {
 	    key: 'removeSeaSponges',
 	    value: function removeSeaSponges(idxsToRemove) {
-	      var _this2 = this;
+	      var _this7 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this2.board.removeSeaSpongeAtIdx(idx);
+	        _this7.board.removeSeaSpongeAtIdx(idx);
 	      });
 	    }
 	  }, {
@@ -406,11 +570,23 @@
 	  }, {
 	    key: 'removeLaserBeams',
 	    value: function removeLaserBeams(idxsToRemove) {
-	      var _this3 = this;
+	      var _this8 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this3.board.removeLaserBeamAtIdx(idx);
+	        _this8.board.removeLaserBeamAtIdx(idx);
 	      });
+	    }
+	  }, {
+	    key: 'removeShrimp',
+	    value: function removeShrimp(idxsToRemove) {
+	      var _this9 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this9.board.removeShrimpAtIdx(idx);
+	      });
+	      if (this.board.shrimp.length === 0) {
+	        this.soundHandler.stopShrimpOscillator();
+	      }
 	    }
 	  }, {
 	    key: 'replaceSegmentsWithHeads',
@@ -426,6 +602,12 @@
 	        // so their position gets updated before their trailing segments
 	        board.addSegmentToStart(newHead);
 	      });
+	    }
+	  }, {
+	    key: 'removeSpider',
+	    value: function removeSpider() {
+	      this.board.removeSpider();
+	      this.soundHandler.stopSpiderSequence();
 	    }
 	  }, {
 	    key: 'incrementScore',
@@ -450,17 +632,20 @@
 	      this.paused = paused;
 	      _createjs2.default.Ticker.paused = paused;
 	      this.board.pauseAnimations(paused);
+	      this.soundHandler.pause(paused);
 	    }
 	  }, {
 	    key: 'endGame',
 	    value: function endGame() {
-	      var _this4 = this;
+	      var _this10 = this;
 	
+	      this.soundHandler.reset();
 	      this.setPaused(true);
+	      this.soundHandler.resetBPM();
 	      this.started = false;
 	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
 	      window.setTimeout(function () {
-	        return _this4.uiHandler.showGameOverPopup(_this4.newHighScore);
+	        return _this10.uiHandler.showGameOverPopup(_this10.newHighScore);
 	      }, 100);
 	    }
 	  }]);
@@ -641,7 +826,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
+	exports.createShrimpSpriteSheet = exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
 	
 	var _createjs = __webpack_require__(1);
 	
@@ -737,7 +922,8 @@
 	    animations: {
 	      new: 0,
 	      oneHit: 1,
-	      twoHits: 2
+	      twoHits: 2,
+	      threeHits: 3
 	    },
 	    framerate: frameRate
 	  });
@@ -757,9 +943,37 @@
 	    framrate: frameRate
 	  });
 	};
+	
+	var createShrimpSpriteSheet = exports.createShrimpSpriteSheet = function createShrimpSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 16,
+	      height: 20
+	    },
+	    images: ['./assets/shrimp.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framrate: frameRate
+	  });
+	};
 
 /***/ },
 /* 5 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var getRandomInt = exports.getRandomInt = function getRandomInt(min, max) {
+	  return Math.floor(Math.random() * (max - min + 1)) + min;
+	};
+
+/***/ },
+/* 6 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -857,7 +1071,7 @@
 	exports.default = UIHandler;
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -868,7 +1082,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _diver = __webpack_require__(7);
+	var _diver = __webpack_require__(8);
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -1028,7 +1242,7 @@
 	exports.default = KeyHandler;
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1044,13 +1258,13 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(8);
+	var _game_object = __webpack_require__(9);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _laser_beam = __webpack_require__(9);
+	var _laser_beam = __webpack_require__(10);
 	
 	var _laser_beam2 = _interopRequireDefault(_laser_beam);
 	
@@ -1103,7 +1317,7 @@
 	exports.default = Diver;
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1297,7 +1511,7 @@
 	exports.default = GameObject;
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1313,7 +1527,7 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(8);
+	var _game_object = __webpack_require__(9);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
@@ -1363,7 +1577,7 @@
 	exports.default = LaserBeam;
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1374,7 +1588,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _tone = __webpack_require__(11);
+	var _tone = __webpack_require__(12);
 	
 	var _tone2 = _interopRequireDefault(_tone);
 	
@@ -1384,7 +1598,11 @@
 	
 	var SoundHandler = function () {
 	  function SoundHandler() {
+	    var _this = this;
+	
 	    _classCallCheck(this, SoundHandler);
+	
+	    var shrimpOscillatorPlaying = false;
 	
 	    // Add volume node - adjust master volume
 	    var synthVolume = new _tone2.default.Volume({
@@ -1399,6 +1617,18 @@
 	    });
 	
 	    synthDistortion.connect(synthVolume);
+	
+	    var oscillatorVolume = new _tone2.default.Volume({
+	      volume: -20
+	    }).toMaster();
+	
+	    var oscillatorDistortion = new _tone2.default.Distortion({
+	      distortion: 1,
+	      oversample: '4x',
+	      wet: 0.5
+	    });
+	
+	    oscillatorDistortion.connect(oscillatorVolume);
 	
 	    var stepVolume = new _tone2.default.Volume({
 	      volume: -16
@@ -1432,14 +1662,34 @@
 	      }
 	    });
 	
+	    this.spiderSequence = new _tone2.default.Sequence(function (time, note) {
+	      _this.synth.triggerAttackRelease(note, '60hz', undefined, 0.1);
+	    }, ['C4', 'D4', 'G4', 'F#4'], "16n");
+	    this.spiderSequence.humanize = true;
+	
+	    this.shrimpOscillator = new _tone2.default.Oscillator();
+	
+	    this.shrimpOscillator.connect(oscillatorDistortion);
+	
 	    // connect synths to distortion/volume/master chain
 	    this.laserSynth.connect(synthDistortion);
 	    this.synth.connect(synthDistortion);
 	
 	    this.stepNoise.connect(stepVolume);
+	
+	    this.resetBPM();
 	  }
 	
 	  _createClass(SoundHandler, [{
+	    key: 'pauseTransport',
+	    value: function pauseTransport(paused) {
+	      if (paused) {
+	        _tone2.default.Transport.stop();
+	      } else {
+	        _tone2.default.Transport.start();
+	      }
+	    }
+	  }, {
 	    key: 'playLaserSound',
 	    value: function playLaserSound() {
 	      this.laserSynth.triggerAttackRelease('D#4', '60hz', undefined, 0.2);
@@ -1465,9 +1715,72 @@
 	      this.synth.triggerAttackRelease('G#4', '20hz');
 	    }
 	  }, {
+	    key: 'playShrimpHit',
+	    value: function playShrimpHit() {
+	      this.synth.triggerAttackRelease('A5', '20hz');
+	    }
+	  }, {
 	    key: 'playSegmentStep',
 	    value: function playSegmentStep() {
 	      this.stepNoise.triggerAttackRelease('1hz');
+	    }
+	  }, {
+	    key: 'startSpiderSequence',
+	    value: function startSpiderSequence() {
+	      this.spiderSequence.start();
+	    }
+	  }, {
+	    key: 'stopSpiderSequence',
+	    value: function stopSpiderSequence() {
+	      this.spiderSequence.stop();
+	    }
+	  }, {
+	    key: 'startShrimpOscillator',
+	    value: function startShrimpOscillator() {
+	      var speed = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+	
+	      this.shrimpOscillator.frequency.value = 1000;
+	      this.shrimpOscillator.start();
+	      this.shrimpOscillator.frequency.rampTo(200, 5 / (speed + 1));
+	      this.shrimpOscillatorPlaying = true;
+	    }
+	  }, {
+	    key: 'pauseShrimpOscillator',
+	    value: function pauseShrimpOscillator(paused) {
+	      if (paused) {
+	        this.shrimpOscillator.stop();
+	      } else if (this.shrimpOscillatorPlaying) {
+	        this.startShrimpOscillator();
+	      }
+	    }
+	  }, {
+	    key: 'stopShrimpOscillator',
+	    value: function stopShrimpOscillator() {
+	      this.shrimpOscillator.stop();
+	      this.shrimpOscillatorPlaying = false;
+	    }
+	  }, {
+	    key: 'incrementBPM',
+	    value: function incrementBPM(increase) {
+	      _tone2.default.Transport.bpm.value += increase;
+	    }
+	  }, {
+	    key: 'resetBPM',
+	    value: function resetBPM() {
+	      _tone2.default.Transport.bpm.value = 120;
+	    }
+	  }, {
+	    key: 'pause',
+	    value: function pause(paused) {
+	      this.pauseTransport(paused);
+	      this.pauseShrimpOscillator(paused);
+	    }
+	  }, {
+	    key: 'reset',
+	    value: function reset() {
+	      this.stopSpiderSequence();
+	      this.stopShrimpOscillator();
+	      this.pauseTransport(true);
 	    }
 	  }]);
 	
@@ -1477,7 +1790,7 @@
 	exports.default = SoundHandler;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function(root, factory){
@@ -23400,7 +23713,7 @@
 	}));
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -23417,9 +23730,9 @@
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _util = __webpack_require__(13);
+	var _util = __webpack_require__(5);
 	
-	var _diver = __webpack_require__(7);
+	var _diver = __webpack_require__(8);
 	
 	var _diver2 = _interopRequireDefault(_diver);
 	
@@ -23441,6 +23754,10 @@
 	
 	var _spider2 = _interopRequireDefault(_spider);
 	
+	var _shrimp = __webpack_require__(19);
+	
+	var _shrimp2 = _interopRequireDefault(_shrimp);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -23454,6 +23771,7 @@
 	    this.laserBeams = [];
 	    this.segments = [];
 	    this.sponges = [];
+	    this.shrimp = [];
 	    this.spider = null;
 	
 	    this.setBackground();
@@ -23463,9 +23781,10 @@
 	    key: 'reset',
 	    value: function reset() {
 	      this.removeDiver();
+	      this.removeAllLaserBeams();
 	      this.removeAllSeaSponges();
 	      this.removeAllSegments();
-	      this.removeAllLaserBeams();
+	      this.removeAllShrimp();
 	      this.removeSpider();
 	    }
 	  }, {
@@ -23577,6 +23896,15 @@
 	      this.sponges.push(sponge);
 	    }
 	  }, {
+	    key: 'addShrimp',
+	    value: function addShrimp(options) {
+	      var x = 16 * (0, _util.getRandomInt)(0, 25);
+	      var shrimp = new _shrimp2.default(Object.assign({ x: x }, options));
+	      shrimp.setStage(this.stage);
+	      this.stage.addChild(shrimp.sprite);
+	      this.shrimp.push(shrimp);
+	    }
+	  }, {
 	    key: 'addSpider',
 	    value: function addSpider(options) {
 	      var startLeft = Math.random() < .5;
@@ -23592,7 +23920,7 @@
 	
 	      var y = (0, _util.getRandomInt)(0, 20) * 25;
 	
-	      this.spider = new _spider2.default(Object.assign(options, { x: x, y: y, direction: direction }));
+	      this.spider = new _spider2.default(Object.assign({ x: x, y: y, direction: direction }, options));
 	      this.spider.setStage(this.stage);
 	      this.stage.addChild(this.spider.sprite);
 	    }
@@ -23647,6 +23975,25 @@
 	      this.segments = [];
 	    }
 	  }, {
+	    key: 'removeShrimpAtIdx',
+	    value: function removeShrimpAtIdx(idx) {
+	      var shrimp = this.shrimp[idx];
+	      this.stage.removeChild(shrimp.sprite);
+	      shrimp.destroy();
+	      this.shrimp.splice(idx, 1);
+	    }
+	  }, {
+	    key: 'removeAllShrimp',
+	    value: function removeAllShrimp() {
+	      var _this4 = this;
+	
+	      this.shrimp.forEach(function (shrimp) {
+	        _this4.stage.removeChild(shrimp.sprite);
+	        shrimp.destroy();
+	      });
+	      this.shrimp = [];
+	    }
+	  }, {
 	    key: 'removeSpider',
 	    value: function removeSpider() {
 	      if (this.spider) {
@@ -23666,10 +24013,10 @@
 	  }, {
 	    key: 'removeAllLaserBeams',
 	    value: function removeAllLaserBeams() {
-	      var _this4 = this;
+	      var _this5 = this;
 	
 	      this.laserBeams.forEach(function (beam) {
-	        _this4.stage.removeChild(beam.sprite);
+	        _this5.stage.removeChild(beam.sprite);
 	        beam.destroy();
 	      });
 	      this.laserBeams = [];
@@ -23687,19 +24034,6 @@
 	}();
 	
 	exports.default = Board;
-
-/***/ },
-/* 13 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var getRandomInt = exports.getRandomInt = function getRandomInt(min, max) {
-	  return Math.floor(Math.random() * (max - min + 1)) + min;
-	};
 
 /***/ },
 /* 14 */
@@ -23790,7 +24124,7 @@
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _diver = __webpack_require__(7);
+	var _diver = __webpack_require__(8);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -23980,7 +24314,9 @@
 	});
 	exports.UP = exports.DOWN = exports.LEFT = exports.RIGHT = undefined;
 	
-	var _game_object = __webpack_require__(8);
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _game_object = __webpack_require__(9);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
@@ -24011,6 +24347,14 @@
 	    return _this;
 	  }
 	
+	  _createClass(MovingObject, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      this.changeX(this.velocityX);
+	      this.changeY(this.velocityY);
+	    }
+	  }]);
+	
 	  return MovingObject;
 	}(_game_object2.default);
 	
@@ -24032,7 +24376,7 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(8);
+	var _game_object = __webpack_require__(9);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
@@ -24066,7 +24410,7 @@
 	
 	    var _this = _possibleConstructorReturn(this, (SeaSponge.__proto__ || Object.getPrototypeOf(SeaSponge)).call(this, Object.assign(defaultOptions, options)));
 	
-	    _this.hits = 3;
+	    _this.hits = 4;
 	    return _this;
 	  }
 	
@@ -24076,11 +24420,14 @@
 	      this.hits -= 1;
 	
 	      switch (this.hits) {
-	        case 2:
+	        case 3:
 	          this.sprite.gotoAndStop("oneHit");
 	          break;
-	        case 1:
+	        case 2:
 	          this.sprite.gotoAndStop("twoHits");
+	          break;
+	        case 1:
+	          this.sprite.gotoAndStop("threeHits");
 	          break;
 	      }
 	    }
@@ -24108,7 +24455,7 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _util = __webpack_require__(13);
+	var _util = __webpack_require__(5);
 	
 	var _moving_object = __webpack_require__(16);
 	
@@ -24116,7 +24463,7 @@
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _diver = __webpack_require__(7);
+	var _diver = __webpack_require__(8);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -24202,6 +24549,80 @@
 	}(_moving_object2.default);
 	
 	exports.default = Spider;
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.SHRIMP_MIN_VELOCITY = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(5);
+	
+	var _moving_object = __webpack_require__(16);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _sea_sponge = __webpack_require__(17);
+	
+	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SHRIMP_MIN_VELOCITY = exports.SHRIMP_MIN_VELOCITY = 6;
+	
+	var SHRIMP_SHEET = (0, _sprite_sheets.createShrimpSpriteSheet)();
+	
+	var Shrimp = function (_MovingObject) {
+	  _inherits(Shrimp, _MovingObject);
+	
+	  function Shrimp() {
+	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	
+	    _classCallCheck(this, Shrimp);
+	
+	    var shrimpSprite = new _createjs2.default.Sprite(SHRIMP_SHEET);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 16,
+	      height: 20,
+	      sprite: shrimpSprite
+	    };
+	
+	    return _possibleConstructorReturn(this, (Shrimp.__proto__ || Object.getPrototypeOf(Shrimp)).call(this, Object.assign(defaultOptions, options)));
+	  }
+	
+	  _createClass(Shrimp, [{
+	    key: 'dropSeaSponge',
+	    value: function dropSeaSponge() {
+	      return new _sea_sponge2.default({ x: this.getX(), y: this.getY() });
+	    }
+	  }]);
+	
+	  return Shrimp;
+	}(_moving_object2.default);
+	
+	exports.default = Shrimp;
 
 /***/ }
 /******/ ]);
