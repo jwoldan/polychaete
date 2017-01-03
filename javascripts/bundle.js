@@ -54,11 +54,11 @@
 	
 	var _game2 = _interopRequireDefault(_game);
 	
-	var _head = __webpack_require__(3);
+	var _head = __webpack_require__(14);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(4);
+	var _segment = __webpack_require__(15);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
@@ -96,39 +96,43 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _jsCookie = __webpack_require__(7);
+	var _jsCookie = __webpack_require__(3);
 	
 	var _jsCookie2 = _interopRequireDefault(_jsCookie);
 	
-	var _sprite_sheets = __webpack_require__(6);
+	var _sprite_sheets = __webpack_require__(4);
 	
-	var _ui_handler = __webpack_require__(8);
+	var _util = __webpack_require__(13);
+	
+	var _ui_handler = __webpack_require__(5);
 	
 	var _ui_handler2 = _interopRequireDefault(_ui_handler);
 	
-	var _key_handler = __webpack_require__(9);
+	var _key_handler = __webpack_require__(6);
 	
 	var _key_handler2 = _interopRequireDefault(_key_handler);
 	
-	var _sound_handler = __webpack_require__(12);
+	var _sound_handler = __webpack_require__(10);
 	
 	var _sound_handler2 = _interopRequireDefault(_sound_handler);
 	
-	var _board = __webpack_require__(14);
+	var _board = __webpack_require__(12);
 	
 	var _board2 = _interopRequireDefault(_board);
 	
-	var _head = __webpack_require__(3);
+	var _head = __webpack_require__(14);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(4);
+	var _segment = __webpack_require__(15);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
-	var _sea_sponge = __webpack_require__(16);
+	var _sea_sponge = __webpack_require__(17);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	var _spider = __webpack_require__(18);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -155,13 +159,14 @@
 	
 	    this.updatePositions = this.updatePositions.bind(this);
 	    this.checkCollisions = this.checkCollisions.bind(this);
+	    this.tryAddSpider = this.tryAddSpider.bind(this);
 	  }
 	
 	  _createClass(Game, [{
 	    key: 'initialize',
 	    value: function initialize(startGame) {
 	      this.startLength = this.initialStartLength;
-	      this.velocityX = _segment.INITIAL_VELOCITY_X;
+	      this.level = 0;
 	      this.currentScore = 0;
 	      this.newHighScore = false;
 	      this.uiHandler.updateCurrentScore(this.currentScore);
@@ -173,7 +178,7 @@
 	        this.started = true;
 	      }
 	      board.addSeaSponges(20);
-	      board.addPolychaete(this.startLength, this.velocityX);
+	      board.addPolychaete(this.startLength, _segment.INITIAL_VELOCITY_X);
 	
 	      this.paused = false;
 	      _createjs2.default.Ticker.paused = false;
@@ -186,6 +191,7 @@
 	      _createjs2.default.Ticker.on("tick", this.keyHandler.handleTick);
 	      _createjs2.default.Ticker.on("tick", this.checkCollisions);
 	      _createjs2.default.Ticker.on("tick", this.updatePositions);
+	      _createjs2.default.Ticker.on("tick", this.tryAddSpider);
 	    }
 	  }, {
 	    key: 'moveDiver',
@@ -244,6 +250,12 @@
 	        segment.updatePosition(collided);
 	      });
 	
+	      if (board.spider) {
+	        var spider = board.spider;
+	        spider.updatePosition();
+	        if (!spider.isPartiallyInMoveBounds()) board.removeSpider();
+	      }
+	
 	      this.removeLaserBeams(idxsToRemove);
 	    }
 	  }, {
@@ -255,9 +267,11 @@
 	
 	      var board = this.board;
 	      var diver = board.diver;
+	      var spider = board.spider;
 	      var beamIdxsToRemove = [];
 	      var segmentIdxsToRemove = [];
 	      var spongeIdxsToRemove = [];
+	      var removeSpider = false;
 	
 	      if (this.started) {
 	        board.segments.forEach(function (segment) {
@@ -265,6 +279,11 @@
 	            _this.endGame();
 	          }
 	        });
+	        if (spider) {
+	          if (spider.overlaps(diver)) {
+	            this.endGame();
+	          }
+	        }
 	      }
 	
 	      board.laserBeams.forEach(function (beam, beamIdx) {
@@ -301,23 +320,54 @@
 	            hit = true;
 	          }
 	        });
+	
+	        if (!hit && spider && beam.overlaps(spider)) {
+	          if (spider.getY() > 500) {
+	            _this.incrementScore(300);
+	          } else if (spider.getY() > 400) {
+	            _this.incrementScore(600);
+	          } else {
+	            _this.incrementScore(900);
+	          }
+	          _this.soundHandler.playSpiderHit();
+	          removeSpider = true;
+	        }
 	      });
 	
 	      this.removeLaserBeams(beamIdxsToRemove);
 	      this.removeSegments(segmentIdxsToRemove);
 	      this.removeSeaSponges(spongeIdxsToRemove);
 	
+	      if (removeSpider) board.removeSpider();
+	
 	      if (board.segments.length === 0) {
-	        this.startLength -= 1;
-	        if (this.startLength === 0) {
-	          this.startLength = this.initialStartLength;
-	          if (this.velocityX < 4) this.velocityX *= 2;
-	        }
-	        board.addPolychaete(this.startLength, this.velocityX);
-	        if (this.startLength !== this.initialStartLength) {
-	          window.setTimeout(function () {
-	            board.addPolychaete(1, _this.velocityX + 1);
-	          }, Math.random() * 1000 + 500);
+	        (function () {
+	          _this.startLength -= 1;
+	          if (_this.startLength === 0) {
+	            _this.startLength = _this.initialStartLength;
+	          }
+	          if (_this.level < 6 && _this.startLength % 3 === 0) {
+	            _this.level += 1;
+	          }
+	          var velocityX = _segment.INITIAL_VELOCITY_X + _this.level;
+	          board.addPolychaete(_this.startLength, velocityX);
+	          if (_this.startLength !== _this.initialStartLength) {
+	            window.setTimeout(function () {
+	              board.addPolychaete(1, velocityX + 1);
+	            }, Math.random() * 1000 + 500);
+	          }
+	        })();
+	      }
+	    }
+	  }, {
+	    key: 'tryAddSpider',
+	    value: function tryAddSpider(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (this.started && !board.spider && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
+	        var random = (0, _util.getRandomInt)(0, 8);
+	        if (random <= this.level) {
+	          board.addSpider({ maximumVelocity: _spider.SPIDER_MIN_VELOCITY + this.level });
 	        }
 	      }
 	    }
@@ -372,7 +422,9 @@
 	        var newHead = _head2.default.createHeadFromSegment(segment);
 	        segment.destroy();
 	        board.segments.splice(idx, 1);
-	        board.addSegment(newHead);
+	        // need to add head segments to the start of the segment array
+	        // so their position gets updated before their trailing segments
+	        board.addSegmentToStart(newHead);
 	      });
 	    }
 	  }, {
@@ -406,7 +458,7 @@
 	
 	      this.setPaused(true);
 	      this.started = false;
-	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore);
+	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
 	      window.setTimeout(function () {
 	        return _this4.uiHandler.showGameOverPopup(_this4.newHighScore);
 	      }, 100);
@@ -420,555 +472,6 @@
 
 /***/ },
 /* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _segment = __webpack_require__(4);
-	
-	var _segment2 = _interopRequireDefault(_segment);
-	
-	var _sprite_sheets = __webpack_require__(6);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var HEAD_SHEET = (0, _sprite_sheets.createHeadSpriteSheet)();
-	
-	var Head = function (_Segment) {
-	  _inherits(Head, _Segment);
-	
-	  function Head(options, moveBounds) {
-	    _classCallCheck(this, Head);
-	
-	    var startFrame = options.direction === _segment.LEFT ? "moveLeft" : "moveRight";
-	    var headSprite = new _createjs2.default.Sprite(HEAD_SHEET, startFrame);
-	
-	    return _possibleConstructorReturn(this, (Head.__proto__ || Object.getPrototypeOf(Head)).call(this, options, moveBounds, headSprite));
-	  }
-	
-	  _createClass(Head, null, [{
-	    key: 'createHeadFromSegment',
-	    value: function createHeadFromSegment(segment) {
-	      var head = new Head({
-	        x: segment.getX(),
-	        y: segment.getY(),
-	        direction: segment.direction,
-	        verticalDirection: segment.verticalDirection,
-	        velocityX: segment.velocityX
-	      }, Object.assign({}, segment.moveBounds));
-	      if (segment.next) head.connectNext(segment.next);
-	      return head;
-	    }
-	  }]);
-	
-	  return Head;
-	}(_segment2.default);
-	
-	exports.default = Head;
-
-/***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.INITIAL_VELOCITY_X = exports.LEFT = exports.RIGHT = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _game_object = __webpack_require__(5);
-	
-	var _game_object2 = _interopRequireDefault(_game_object);
-	
-	var _sprite_sheets = __webpack_require__(6);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var SEGMENT_SHEET = (0, _sprite_sheets.createSegmentSpriteSheet)();
-	
-	var RIGHT = exports.RIGHT = 'RIGHT';
-	var LEFT = exports.LEFT = 'LEFT';
-	var DOWN = 'DOWN';
-	var UP = 'UP';
-	var VERTICAL_FROM_RIGHT = 'VERTICAL_FROM_RIGHT';
-	var VERTICAL_FROM_LEFT = 'VERTICAL_FROM_LEFT';
-	
-	var INITIAL_VELOCITY_X = exports.INITIAL_VELOCITY_X = 2;
-	var VELOCITY_Y = 10;
-	
-	var Segment = function (_GameObject) {
-	  _inherits(Segment, _GameObject);
-	
-	  function Segment(options, moveBounds, alternateSprite) {
-	    _classCallCheck(this, Segment);
-	
-	    var segmentSprite = void 0;
-	    if (alternateSprite) {
-	      segmentSprite = alternateSprite;
-	    } else {
-	      var startFrame = options.direction === LEFT ? "moveLeft" : "moveRight";
-	      segmentSprite = alternateSprite ? alternateSprite : new _createjs2.default.Sprite(SEGMENT_SHEET, startFrame);
-	    }
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: 16,
-	      height: 20,
-	      sprite: segmentSprite
-	    };
-	
-	    var _this = _possibleConstructorReturn(this, (Segment.__proto__ || Object.getPrototypeOf(Segment)).call(this, Object.assign(defaultOptions, options), moveBounds));
-	
-	    _this.direction = options.direction || RIGHT;
-	    _this.verticalDirection = options.verticalDirection || DOWN;
-	    _this.velocityX = options.velocityX || INITIAL_VELOCITY_X;
-	
-	    _this.prev = null;
-	    _this.next = null;
-	    return _this;
-	  }
-	
-	  _createClass(Segment, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      var collided = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-	
-	      switch (this.direction) {
-	        case RIGHT:
-	          if (this.moveBounds.maxX - this.getMaxX() > this.velocityX && !collided) {
-	            this.moveRight();
-	          } else {
-	            this.moveVerticalFromRight();
-	          }
-	          break;
-	        case LEFT:
-	          if (this.getX() - this.moveBounds.minX > this.velocityX && !collided) {
-	            this.moveLeft();
-	          } else {
-	            this.moveVerticalFromLeft();
-	          }
-	          break;
-	        case VERTICAL_FROM_RIGHT:
-	          this.moveLeftFromVertical();
-	          break;
-	        case VERTICAL_FROM_LEFT:
-	          this.moveRightFromVertical();
-	          break;
-	      }
-	      if (this.verticalDirection === DOWN && this.moveBounds.maxY - this.getMaxY() < 10) {
-	        this.verticalDirection = UP;
-	        this.moveBounds.minY = 520;
-	      } else if (this.verticalDirection === UP && this.getY() - this.moveBounds.minY < 10) {
-	        this.verticalDirection = DOWN;
-	      }
-	    }
-	  }, {
-	    key: 'moveRight',
-	    value: function moveRight() {
-	      this.changeX(this.velocityX);
-	      this.direction = RIGHT;
-	    }
-	  }, {
-	    key: 'moveLeft',
-	    value: function moveLeft() {
-	      this.changeX(-this.velocityX);
-	      this.direction = LEFT;
-	    }
-	  }, {
-	    key: 'moveVerticalFromRight',
-	    value: function moveVerticalFromRight() {
-	      var vertChange = void 0;
-	      if (this.verticalDirection === DOWN) {
-	        vertChange = VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveDown');
-	      } else {
-	        vertChange = -VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveUp');
-	      }
-	      this.changeX(this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = VERTICAL_FROM_RIGHT;
-	    }
-	  }, {
-	    key: 'moveVerticalFromLeft',
-	    value: function moveVerticalFromLeft() {
-	      var vertChange = void 0;
-	      if (this.verticalDirection === DOWN) {
-	        vertChange = VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveDown');
-	      } else {
-	        vertChange = -VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveUp');
-	      }
-	      this.changeX(-this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = VERTICAL_FROM_LEFT;
-	    }
-	  }, {
-	    key: 'moveRightFromVertical',
-	    value: function moveRightFromVertical() {
-	      var vertChange = this.verticalDirection === DOWN ? VELOCITY_Y : -VELOCITY_Y;
-	      this.sprite.gotoAndPlay('moveRight');
-	      this.changeX(this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = RIGHT;
-	    }
-	  }, {
-	    key: 'moveLeftFromVertical',
-	    value: function moveLeftFromVertical() {
-	      var vertChange = this.verticalDirection === DOWN ? VELOCITY_Y : -VELOCITY_Y;
-	      this.sprite.gotoAndPlay('moveLeft');
-	      this.changeX(-this.velocityX);
-	      this.changeY(vertChange);
-	      this.direction = LEFT;
-	    }
-	  }, {
-	    key: 'connectNext',
-	    value: function connectNext(segment) {
-	      var oldNext = this.next;
-	      this.next = segment;
-	      if (segment.prev) segment.prev.next = null;
-	      segment.prev = this;
-	      if (oldNext) {
-	        oldNext.prev = segment;
-	        segment.next = oldNext;
-	      }
-	    }
-	  }, {
-	    key: 'destroy',
-	    value: function destroy() {
-	      if (this.next) this.next.prev = null;
-	      if (this.prev) this.prev.next = null;
-	      this.next = null;
-	      this.prev = null;
-	      this.destroySprite();
-	    }
-	  }]);
-	
-	  return Segment;
-	}(_game_object2.default);
-	
-	exports.default = Segment;
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var GameObject = function () {
-	  function GameObject(options, moveBounds) {
-	    _classCallCheck(this, GameObject);
-	
-	    this.moveBounds = Object.assign({
-	      minX: 0,
-	      minY: 0,
-	      maxX: 0,
-	      maxY: 0
-	    }, moveBounds);
-	
-	    this.sprite = options.sprite;
-	    this.sprite.x = options.x;
-	    this.sprite.y = options.y;
-	    this.sprite.setBounds(options.x, options.y, options.width, options.height);
-	  }
-	
-	  _createClass(GameObject, [{
-	    key: "setStage",
-	    value: function setStage(stage) {
-	      this.stage = stage;
-	      if (this.moveBounds.maxX === 0) this.moveBounds.maxX = stage.canvas.width;
-	      if (this.moveBounds.maxY === 0) this.moveBounds.maxY = stage.canvas.height;
-	    }
-	  }, {
-	    key: "setX",
-	    value: function setX(x) {
-	      this.sprite.x = x;
-	    }
-	  }, {
-	    key: "setY",
-	    value: function setY(y) {
-	      this.sprite.y = y;
-	    }
-	  }, {
-	    key: "changeX",
-	    value: function changeX(xDiff) {
-	      this.sprite.x += xDiff;
-	    }
-	  }, {
-	    key: "changeY",
-	    value: function changeY(yDiff) {
-	      this.sprite.y += yDiff;
-	    }
-	  }, {
-	    key: "setBoundedX",
-	    value: function setBoundedX(x) {
-	      this.sprite.x = this.withinMoveBoundsX(x);
-	    }
-	  }, {
-	    key: "setBoundedY",
-	    value: function setBoundedY(y) {
-	      this.sprite.y = this.withinMoveBoundsY(y);
-	    }
-	  }, {
-	    key: "changeBoundedX",
-	    value: function changeBoundedX(xDiff) {
-	      this.setBoundedX(this.sprite.x + xDiff);
-	    }
-	  }, {
-	    key: "changeBoundedY",
-	    value: function changeBoundedY(yDiff) {
-	      this.setBoundedY(this.sprite.y + yDiff);
-	    }
-	  }, {
-	    key: "changeBoundedPos",
-	    value: function changeBoundedPos(xDiff, yDiff) {
-	      this.changeBoundedX(xDiff);
-	      this.changeBoundedY(yDiff);
-	    }
-	  }, {
-	    key: "getX",
-	    value: function getX() {
-	      return this.sprite.x;
-	    }
-	  }, {
-	    key: "getY",
-	    value: function getY() {
-	      return this.sprite.y;
-	    }
-	  }, {
-	    key: "getWidth",
-	    value: function getWidth() {
-	      return this.sprite.getBounds().width;
-	    }
-	  }, {
-	    key: "getHeight",
-	    value: function getHeight() {
-	      return this.sprite.getBounds().height;
-	    }
-	  }, {
-	    key: "getMaxX",
-	    value: function getMaxX() {
-	      return this.getX() + this.getWidth() - 1;
-	    }
-	  }, {
-	    key: "getMaxY",
-	    value: function getMaxY() {
-	      return this.getY() + this.getHeight() - 1;
-	    }
-	  }, {
-	    key: "centerX",
-	    value: function centerX() {
-	      return this.sprite.x + this.sprite.getBounds().width / 2;
-	    }
-	  }, {
-	    key: "centerY",
-	    value: function centerY() {
-	      return this.sprite.y + this.sprite.getBounds().height / 2;
-	    }
-	  }, {
-	    key: "withinCanvas",
-	    value: function withinCanvas(posX, posY) {
-	      var bounds = this.sprite.getBounds();
-	      return posX >= 0 && posX + bounds.width <= this.canvas.width && posY >= 0 && posY + bounds.height <= this.canvas.height;
-	    }
-	  }, {
-	    key: "withinMoveBoundsX",
-	    value: function withinMoveBoundsX(newX) {
-	      var bounds = this.sprite.getBounds();
-	      if (newX < this.moveBounds.minX) newX = this.moveBounds.minX;
-	      if (newX + bounds.width > this.moveBounds.maxX) {
-	        newX = this.moveBounds.maxX - bounds.width;
-	      }
-	      return newX;
-	    }
-	  }, {
-	    key: "withinMoveBoundsY",
-	    value: function withinMoveBoundsY(newY) {
-	      var bounds = this.sprite.getBounds();
-	      if (newY < this.moveBounds.minY) newY = this.moveBounds.minY;
-	      if (newY + bounds.height > this.moveBounds.maxY) {
-	        newY = this.moveBounds.maxY - bounds.height;
-	      }
-	      return newY;
-	    }
-	  }, {
-	    key: "destroySprite",
-	    value: function destroySprite() {
-	      this.sprite = null;
-	    }
-	  }, {
-	    key: "destroy",
-	    value: function destroy() {
-	      this.destroySprite();
-	    }
-	  }, {
-	    key: "overlaps",
-	    value: function overlaps(other) {
-	      if (this.getMaxX() < other.getX() || other.getMaxX() < this.getX() || this.getMaxY() < other.getY() || other.getMaxY() < this.getY()) {
-	        return false;
-	      } else {
-	        return true;
-	      }
-	    }
-	  }]);
-	
-	  return GameObject;
-	}();
-	
-	exports.default = GameObject;
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	var FPS = exports.FPS = 120;
-	var ANIMATION_RATE = exports.ANIMATION_RATE = 10;
-	
-	var createDiverSpriteSheet = exports.createDiverSpriteSheet = function createDiverSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: {
-	      width: 16,
-	      height: 18
-	    },
-	    images: ['./assets/diver.png'],
-	    animations: {
-	      default: 0
-	    }
-	  });
-	};
-	
-	var createLaserBeamSpriteSheet = exports.createLaserBeamSpriteSheet = function createLaserBeamSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: {
-	      width: 2,
-	      height: 12
-	    },
-	    images: ['./assets/laser_beam.png'],
-	    animations: {
-	      default: 0
-	    }
-	  });
-	};
-	
-	var createHeadSpriteSheet = exports.createHeadSpriteSheet = function createHeadSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: [
-	    // move left
-	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
-	    // move right
-	    [0, 20, 16, 20], [16, 20, 16, 20], [32, 20, 16, 20],
-	    // move down
-	    [0, 40, 20, 20], [20, 40, 20, 20], [40, 40, 20, 20],
-	    // move up
-	    [0, 60, 20, 20], [20, 60, 20, 20], [40, 60, 20, 20]],
-	    images: ['./assets/head.png'],
-	    animations: {
-	      moveLeft: [0, 2],
-	      moveRight: [3, 5],
-	      moveDown: [6, 8],
-	      moveUp: [9, 11]
-	    },
-	    framerate: frameRate
-	  });
-	};
-	
-	var createSegmentSpriteSheet = exports.createSegmentSpriteSheet = function createSegmentSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: [
-	    // left/right
-	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
-	    // up/down
-	    [0, 20, 20, 20], [20, 20, 20, 20], [40, 20, 20, 20]],
-	    images: ['./assets/segment.png'],
-	    animations: {
-	      moveLeft: [0, 2],
-	      moveDown: 4,
-	      moveRight: {
-	        frames: [2, 1, 0]
-	      },
-	      moveUp: {
-	        frames: 4
-	      }
-	    },
-	    framerate: frameRate
-	  });
-	};
-	
-	var createSeaSpongeSpriteSheet = exports.createSeaSpongeSpriteSheet = function createSeaSpongeSpriteSheet() {
-	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
-	  return new _createjs2.default.SpriteSheet({
-	    frames: {
-	      width: 16,
-	      height: 20
-	    },
-	    images: ['./assets/sea_sponge.png'],
-	    animations: {
-	      new: 0,
-	      oneHit: 1,
-	      twoHits: 2
-	    },
-	    framerate: frameRate
-	  });
-	};
-
-/***/ },
-/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -1130,7 +633,133 @@
 
 
 /***/ },
-/* 8 */
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var FPS = exports.FPS = 60;
+	var ANIMATION_RATE = exports.ANIMATION_RATE = 10;
+	
+	var createDiverSpriteSheet = exports.createDiverSpriteSheet = function createDiverSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 16,
+	      height: 18
+	    },
+	    images: ['./assets/diver.png'],
+	    animations: {
+	      default: 0
+	    }
+	  });
+	};
+	
+	var createLaserBeamSpriteSheet = exports.createLaserBeamSpriteSheet = function createLaserBeamSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 2,
+	      height: 12
+	    },
+	    images: ['./assets/laser_beam.png'],
+	    animations: {
+	      default: 0
+	    }
+	  });
+	};
+	
+	var createHeadSpriteSheet = exports.createHeadSpriteSheet = function createHeadSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: [
+	    // move left
+	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
+	    // move right
+	    [0, 20, 16, 20], [16, 20, 16, 20], [32, 20, 16, 20],
+	    // move down
+	    [0, 40, 20, 20], [20, 40, 20, 20], [40, 40, 20, 20],
+	    // move up
+	    [0, 60, 20, 20], [20, 60, 20, 20], [40, 60, 20, 20]],
+	    images: ['./assets/head.png'],
+	    animations: {
+	      moveLeft: [0, 2],
+	      moveRight: [3, 5],
+	      moveDown: [6, 8],
+	      moveUp: [9, 11]
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createSegmentSpriteSheet = exports.createSegmentSpriteSheet = function createSegmentSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: [
+	    // left/right
+	    [0, 0, 16, 20], [16, 0, 16, 20], [32, 0, 16, 20],
+	    // up/down
+	    [0, 20, 20, 20], [20, 20, 20, 20], [40, 20, 20, 20]],
+	    images: ['./assets/segment.png'],
+	    animations: {
+	      moveLeft: [0, 2],
+	      moveDown: 4,
+	      moveRight: {
+	        frames: [2, 1, 0]
+	      },
+	      moveUp: {
+	        frames: 4
+	      }
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createSeaSpongeSpriteSheet = exports.createSeaSpongeSpriteSheet = function createSeaSpongeSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 16,
+	      height: 20
+	    },
+	    images: ['./assets/sea_sponge.png'],
+	    animations: {
+	      new: 0,
+	      oneHit: 1,
+	      twoHits: 2
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createSpiderSpriteSheet = exports.createSpiderSpriteSheet = function createSpiderSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 25,
+	      height: 15
+	    },
+	    images: ['./assets/spider.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framrate: frameRate
+	  });
+	};
+
+/***/ },
+/* 5 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1228,7 +857,7 @@
 	exports.default = UIHandler;
 
 /***/ },
-/* 9 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1239,7 +868,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _diver = __webpack_require__(10);
+	var _diver = __webpack_require__(7);
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -1399,7 +1028,7 @@
 	exports.default = KeyHandler;
 
 /***/ },
-/* 10 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1407,7 +1036,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.DIVER_MOVE_AMOUNT = undefined;
+	exports.DIVER_MIN_Y = exports.DIVER_MOVE_AMOUNT = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -1415,13 +1044,13 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(5);
+	var _game_object = __webpack_require__(8);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
-	var _sprite_sheets = __webpack_require__(6);
+	var _sprite_sheets = __webpack_require__(4);
 	
-	var _laser_beam = __webpack_require__(11);
+	var _laser_beam = __webpack_require__(9);
 	
 	var _laser_beam2 = _interopRequireDefault(_laser_beam);
 	
@@ -1433,9 +1062,11 @@
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
-	var DIVER_MOVE_AMOUNT = exports.DIVER_MOVE_AMOUNT = 3;
+	var DIVER_MOVE_AMOUNT = exports.DIVER_MOVE_AMOUNT = 6;
 	
 	var DIVER_SHEET = (0, _sprite_sheets.createDiverSpriteSheet)();
+	
+	var DIVER_MIN_Y = exports.DIVER_MIN_Y = 520;
 	
 	var Diver = function (_GameObject) {
 	  _inherits(Diver, _GameObject);
@@ -1452,15 +1083,15 @@
 	      height: 18,
 	      sprite: diverSprite
 	    };
-	    return _possibleConstructorReturn(this, (Diver.__proto__ || Object.getPrototypeOf(Diver)).call(this, Object.assign(defaultOptions, options), { minY: 520 }));
+	    return _possibleConstructorReturn(this, (Diver.__proto__ || Object.getPrototypeOf(Diver)).call(this, Object.assign(defaultOptions, options), { minY: DIVER_MIN_Y }));
 	  }
 	
 	  _createClass(Diver, [{
 	    key: 'fireLaser',
 	    value: function fireLaser() {
 	      var laserBeam = new _laser_beam2.default({
-	        x: this.centerX() - 1,
-	        y: this.getY() - 12
+	        x: this.centerX() - _laser_beam.BEAM_WIDTH / 2,
+	        y: this.getY() - _laser_beam.BEAM_HEIGHT
 	      });
 	      return laserBeam;
 	    }
@@ -1472,10 +1103,10 @@
 	exports.default = Diver;
 
 /***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
+/* 8 */
+/***/ function(module, exports) {
 
-	'use strict';
+	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
@@ -1483,15 +1114,210 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var GameObject = function () {
+	  function GameObject(options, moveBounds) {
+	    _classCallCheck(this, GameObject);
+	
+	    this.moveBounds = Object.assign({
+	      minX: 0,
+	      minY: 0,
+	      maxX: 0,
+	      maxY: 0
+	    }, moveBounds);
+	
+	    this.sprite = options.sprite;
+	    this.sprite.x = options.x;
+	    this.sprite.y = options.y;
+	    this.sprite.setBounds(options.x, options.y, options.width, options.height);
+	  }
+	
+	  _createClass(GameObject, [{
+	    key: "setStage",
+	    value: function setStage(stage) {
+	      this.stage = stage;
+	      if (this.moveBounds.maxX === 0) this.moveBounds.maxX = stage.canvas.width;
+	      if (this.moveBounds.maxY === 0) this.moveBounds.maxY = stage.canvas.height;
+	    }
+	  }, {
+	    key: "setX",
+	    value: function setX(x) {
+	      this.sprite.x = x;
+	    }
+	  }, {
+	    key: "setY",
+	    value: function setY(y) {
+	      this.sprite.y = y;
+	    }
+	  }, {
+	    key: "changeX",
+	    value: function changeX(xDiff) {
+	      this.sprite.x += xDiff;
+	    }
+	  }, {
+	    key: "changeY",
+	    value: function changeY(yDiff) {
+	      this.sprite.y += yDiff;
+	    }
+	  }, {
+	    key: "setBoundedX",
+	    value: function setBoundedX(x) {
+	      this.sprite.x = this.withinMoveBoundsX(x);
+	    }
+	  }, {
+	    key: "setBoundedY",
+	    value: function setBoundedY(y) {
+	      this.sprite.y = this.withinMoveBoundsY(y);
+	    }
+	  }, {
+	    key: "changeBoundedX",
+	    value: function changeBoundedX(xDiff) {
+	      this.setBoundedX(this.sprite.x + xDiff);
+	    }
+	  }, {
+	    key: "changeBoundedY",
+	    value: function changeBoundedY(yDiff) {
+	      this.setBoundedY(this.sprite.y + yDiff);
+	    }
+	  }, {
+	    key: "changeBoundedPos",
+	    value: function changeBoundedPos(xDiff, yDiff) {
+	      this.changeBoundedX(xDiff);
+	      this.changeBoundedY(yDiff);
+	    }
+	  }, {
+	    key: "getX",
+	    value: function getX() {
+	      return this.sprite.x;
+	    }
+	  }, {
+	    key: "getY",
+	    value: function getY() {
+	      return this.sprite.y;
+	    }
+	  }, {
+	    key: "getWidth",
+	    value: function getWidth() {
+	      return this.sprite.getBounds().width;
+	    }
+	  }, {
+	    key: "getHeight",
+	    value: function getHeight() {
+	      return this.sprite.getBounds().height;
+	    }
+	  }, {
+	    key: "getMaxX",
+	    value: function getMaxX() {
+	      return this.getX() + this.getWidth() - 1;
+	    }
+	  }, {
+	    key: "getMaxY",
+	    value: function getMaxY() {
+	      return this.getY() + this.getHeight() - 1;
+	    }
+	  }, {
+	    key: "centerX",
+	    value: function centerX() {
+	      return this.sprite.x + this.sprite.getBounds().width / 2;
+	    }
+	  }, {
+	    key: "centerY",
+	    value: function centerY() {
+	      return this.sprite.y + this.sprite.getBounds().height / 2;
+	    }
+	  }, {
+	    key: "withinCanvas",
+	    value: function withinCanvas(posX, posY) {
+	      var bounds = this.sprite.getBounds();
+	      return posX >= 0 && posX + bounds.width <= this.canvas.width && posY >= 0 && posY + bounds.height <= this.canvas.height;
+	    }
+	  }, {
+	    key: "isFullyInMoveBounds",
+	    value: function isFullyInMoveBounds() {
+	      if (this.getX() >= this.moveBounds.minX && this.getMaxX() <= this.moveBounds.maxX && this.getY() >= this.moveBounds.minY && this.getMaxY() <= this.moveBounds.maxY) {
+	        return true;
+	      } else {
+	        return false;
+	      }
+	    }
+	  }, {
+	    key: "isPartiallyInMoveBounds",
+	    value: function isPartiallyInMoveBounds() {
+	      if (this.getMaxX() >= this.moveBounds.minX && this.getX() <= this.moveBounds.maxX && this.getMaxY() >= this.moveBounds.minY && this.getY() <= this.moveBounds.maxY) {
+	        return true;
+	      } else {
+	        return false;
+	      }
+	    }
+	  }, {
+	    key: "withinMoveBoundsX",
+	    value: function withinMoveBoundsX(newX) {
+	      var bounds = this.sprite.getBounds();
+	      if (newX < this.moveBounds.minX) newX = this.moveBounds.minX;
+	      if (newX + bounds.width > this.moveBounds.maxX) {
+	        newX = this.moveBounds.maxX - bounds.width;
+	      }
+	      return newX;
+	    }
+	  }, {
+	    key: "withinMoveBoundsY",
+	    value: function withinMoveBoundsY(newY) {
+	      var bounds = this.sprite.getBounds();
+	      if (newY < this.moveBounds.minY) newY = this.moveBounds.minY;
+	      if (newY + bounds.height > this.moveBounds.maxY) {
+	        newY = this.moveBounds.maxY - bounds.height;
+	      }
+	      return newY;
+	    }
+	  }, {
+	    key: "destroySprite",
+	    value: function destroySprite() {
+	      this.sprite = null;
+	    }
+	  }, {
+	    key: "destroy",
+	    value: function destroy() {
+	      this.destroySprite();
+	    }
+	  }, {
+	    key: "overlaps",
+	    value: function overlaps(other) {
+	      if (this.getMaxX() < other.getX() || other.getMaxX() < this.getX() || this.getMaxY() < other.getY() || other.getMaxY() < this.getY()) {
+	        return false;
+	      } else {
+	        return true;
+	      }
+	    }
+	  }]);
+	
+	  return GameObject;
+	}();
+	
+	exports.default = GameObject;
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.BEAM_HEIGHT = exports.BEAM_WIDTH = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
 	var _createjs = __webpack_require__(1);
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(5);
+	var _game_object = __webpack_require__(8);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
-	var _sprite_sheets = __webpack_require__(6);
+	var _sprite_sheets = __webpack_require__(4);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -1501,7 +1327,10 @@
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
-	var VELOCITY_Y = -8;
+	var VELOCITY_Y = -16;
+	var BEAM_WIDTH = exports.BEAM_WIDTH = 2;
+	var BEAM_HEIGHT = exports.BEAM_HEIGHT = 12;
+	
 	var LASER_BEAM_SHEET = (0, _sprite_sheets.createLaserBeamSpriteSheet)();
 	
 	var LaserBeam = function (_GameObject) {
@@ -1513,8 +1342,8 @@
 	    var laserBeamSprite = new _createjs2.default.Sprite(LASER_BEAM_SHEET);
 	
 	    var defaultOptions = {
-	      width: 2,
-	      height: 12,
+	      width: BEAM_WIDTH,
+	      height: BEAM_HEIGHT,
 	      sprite: laserBeamSprite
 	    };
 	
@@ -1534,7 +1363,7 @@
 	exports.default = LaserBeam;
 
 /***/ },
-/* 12 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1545,7 +1374,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _tone = __webpack_require__(13);
+	var _tone = __webpack_require__(11);
 	
 	var _tone2 = _interopRequireDefault(_tone);
 	
@@ -1631,6 +1460,11 @@
 	      this.synth.triggerAttackRelease('F3', '40hz');
 	    }
 	  }, {
+	    key: 'playSpiderHit',
+	    value: function playSpiderHit() {
+	      this.synth.triggerAttackRelease('G#4', '20hz');
+	    }
+	  }, {
 	    key: 'playSegmentStep',
 	    value: function playSegmentStep() {
 	      this.stepNoise.triggerAttackRelease('1hz');
@@ -1643,7 +1477,7 @@
 	exports.default = SoundHandler;
 
 /***/ },
-/* 13 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function(root, factory){
@@ -23566,7 +23400,7 @@
 	}));
 
 /***/ },
-/* 14 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -23581,25 +23415,31 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _sprite_sheets = __webpack_require__(6);
+	var _sprite_sheets = __webpack_require__(4);
 	
-	var _util = __webpack_require__(15);
+	var _util = __webpack_require__(13);
 	
-	var _diver = __webpack_require__(10);
+	var _diver = __webpack_require__(7);
 	
 	var _diver2 = _interopRequireDefault(_diver);
 	
-	var _head = __webpack_require__(3);
+	var _head = __webpack_require__(14);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(4);
+	var _segment = __webpack_require__(15);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
-	var _sea_sponge = __webpack_require__(16);
+	var _moving_object = __webpack_require__(16);
+	
+	var _sea_sponge = __webpack_require__(17);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	var _spider = __webpack_require__(18);
+	
+	var _spider2 = _interopRequireDefault(_spider);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -23614,6 +23454,7 @@
 	    this.laserBeams = [];
 	    this.segments = [];
 	    this.sponges = [];
+	    this.spider = null;
 	
 	    this.setBackground();
 	  }
@@ -23625,6 +23466,7 @@
 	      this.removeAllSeaSponges();
 	      this.removeAllSegments();
 	      this.removeAllLaserBeams();
+	      this.removeSpider();
 	    }
 	  }, {
 	    key: 'addDiver',
@@ -23690,11 +23532,11 @@
 	      var xIncrement = void 0;
 	      if (startLeft) {
 	        headX = 0;
-	        direction = _segment.RIGHT;
+	        direction = _moving_object.RIGHT;
 	        xIncrement = -16;
 	      } else {
 	        headX = this.stage.canvas.width - 16;
-	        direction = _segment.LEFT;
+	        direction = _moving_object.LEFT;
 	        xIncrement = 16;
 	      }
 	
@@ -23721,11 +23563,38 @@
 	      this.segments.push(segment);
 	    }
 	  }, {
+	    key: 'addSegmentToStart',
+	    value: function addSegmentToStart(segment) {
+	      segment.setStage(this.stage);
+	      this.stage.addChild(segment.sprite);
+	      this.segments.unshift(segment);
+	    }
+	  }, {
 	    key: 'addSeaSponge',
 	    value: function addSeaSponge(sponge) {
 	      sponge.setStage(this.stage);
 	      this.stage.addChild(sponge.sprite);
 	      this.sponges.push(sponge);
+	    }
+	  }, {
+	    key: 'addSpider',
+	    value: function addSpider(options) {
+	      var startLeft = Math.random() < .5;
+	      var x = void 0;
+	      var direction = void 0;
+	      if (startLeft) {
+	        x = -24;
+	        direction = _moving_object.RIGHT;
+	      } else {
+	        x = this.stage.canvas.width - 1;
+	        direction = _moving_object.LEFT;
+	      }
+	
+	      var y = (0, _util.getRandomInt)(0, 20) * 25;
+	
+	      this.spider = new _spider2.default(Object.assign(options, { x: x, y: y, direction: direction }));
+	      this.spider.setStage(this.stage);
+	      this.stage.addChild(this.spider.sprite);
 	    }
 	  }, {
 	    key: 'addLaserBeam',
@@ -23778,6 +23647,15 @@
 	      this.segments = [];
 	    }
 	  }, {
+	    key: 'removeSpider',
+	    value: function removeSpider() {
+	      if (this.spider) {
+	        this.stage.removeChild(this.spider.sprite);
+	        this.spider.destroy();
+	        this.spider = null;
+	      }
+	    }
+	  }, {
 	    key: 'removeLaserBeamAtIdx',
 	    value: function removeLaserBeamAtIdx(idx) {
 	      var laserBeam = this.laserBeams[idx];
@@ -23811,7 +23689,7 @@
 	exports.default = Board;
 
 /***/ },
-/* 15 */
+/* 13 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -23824,7 +23702,7 @@
 	};
 
 /***/ },
-/* 16 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -23839,11 +23717,326 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(5);
+	var _segment = __webpack_require__(15);
+	
+	var _segment2 = _interopRequireDefault(_segment);
+	
+	var _moving_object = __webpack_require__(16);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var HEAD_SHEET = (0, _sprite_sheets.createHeadSpriteSheet)();
+	
+	var Head = function (_Segment) {
+	  _inherits(Head, _Segment);
+	
+	  function Head(options, moveBounds) {
+	    _classCallCheck(this, Head);
+	
+	    var startFrame = options.direction === _moving_object.LEFT ? "moveLeft" : "moveRight";
+	    var headSprite = new _createjs2.default.Sprite(HEAD_SHEET, startFrame);
+	
+	    return _possibleConstructorReturn(this, (Head.__proto__ || Object.getPrototypeOf(Head)).call(this, options, moveBounds, headSprite));
+	  }
+	
+	  _createClass(Head, null, [{
+	    key: 'createHeadFromSegment',
+	    value: function createHeadFromSegment(segment) {
+	      var head = new Head({
+	        x: segment.getX(),
+	        y: segment.getY(),
+	        direction: segment.direction,
+	        verticalDirection: segment.verticalDirection,
+	        velocityX: segment.velocityX
+	      }, Object.assign({}, segment.moveBounds));
+	      if (segment.next) head.connectNext(segment.next);
+	      return head;
+	    }
+	  }]);
+	
+	  return Head;
+	}(_segment2.default);
+	
+	exports.default = Head;
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.INITIAL_VELOCITY_X = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _moving_object = __webpack_require__(16);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _diver = __webpack_require__(7);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SEGMENT_SHEET = (0, _sprite_sheets.createSegmentSpriteSheet)();
+	
+	var VERTICAL_FROM_RIGHT = 'VERTICAL_FROM_RIGHT';
+	var VERTICAL_FROM_LEFT = 'VERTICAL_FROM_LEFT';
+	
+	var INITIAL_VELOCITY_X = exports.INITIAL_VELOCITY_X = 4;
+	var VELOCITY_Y = 10;
+	
+	var Segment = function (_MovingObject) {
+	  _inherits(Segment, _MovingObject);
+	
+	  function Segment(options, moveBounds, alternateSprite) {
+	    _classCallCheck(this, Segment);
+	
+	    var segmentSprite = void 0;
+	    if (alternateSprite) {
+	      segmentSprite = alternateSprite;
+	    } else {
+	      var startFrame = options.direction === _moving_object.LEFT ? "moveLeft" : "moveRight";
+	      segmentSprite = alternateSprite ? alternateSprite : new _createjs2.default.Sprite(SEGMENT_SHEET, startFrame);
+	    }
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 16,
+	      height: 20,
+	      velocityX: INITIAL_VELOCITY_X,
+	      sprite: segmentSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Segment.__proto__ || Object.getPrototypeOf(Segment)).call(this, Object.assign(defaultOptions, options), moveBounds));
+	
+	    _this.verticalDirection = options.verticalDirection || _moving_object.DOWN;
+	    _this.prev = null;
+	    _this.next = null;
+	    return _this;
+	  }
+	
+	  _createClass(Segment, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      var collided = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+	
+	      switch (this.direction) {
+	        case _moving_object.RIGHT:
+	          if (this.moveBounds.maxX - this.getMaxX() > this.velocityX && !collided) {
+	            this.moveRight();
+	          } else {
+	            this.moveVerticalFromRight();
+	          }
+	          break;
+	        case _moving_object.LEFT:
+	          if (this.getX() - this.moveBounds.minX > this.velocityX && !collided) {
+	            this.moveLeft();
+	          } else {
+	            this.moveVerticalFromLeft();
+	          }
+	          break;
+	        case VERTICAL_FROM_RIGHT:
+	          this.moveLeftFromVertical();
+	          break;
+	        case VERTICAL_FROM_LEFT:
+	          this.moveRightFromVertical();
+	          break;
+	      }
+	      if (this.verticalDirection === _moving_object.DOWN && this.moveBounds.maxY - this.getMaxY() < VELOCITY_Y) {
+	        this.verticalDirection = _moving_object.UP;
+	        this.moveBounds.minY = _diver.DIVER_MIN_Y;
+	      } else if (this.verticalDirection === _moving_object.UP && this.getY() - this.moveBounds.minY < VELOCITY_Y) {
+	        this.verticalDirection = _moving_object.DOWN;
+	      }
+	    }
+	  }, {
+	    key: 'moveRight',
+	    value: function moveRight() {
+	      this.changeX(this.velocityX);
+	      this.direction = _moving_object.RIGHT;
+	    }
+	  }, {
+	    key: 'moveLeft',
+	    value: function moveLeft() {
+	      this.changeX(-this.velocityX);
+	      this.direction = _moving_object.LEFT;
+	    }
+	  }, {
+	    key: 'moveVerticalFromRight',
+	    value: function moveVerticalFromRight() {
+	      var vertChange = void 0;
+	      if (this.verticalDirection === _moving_object.DOWN) {
+	        vertChange = VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveDown');
+	      } else {
+	        vertChange = -VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveUp');
+	      }
+	      this.changeX(this.velocityX);
+	      this.changeY(vertChange);
+	      this.direction = VERTICAL_FROM_RIGHT;
+	    }
+	  }, {
+	    key: 'moveVerticalFromLeft',
+	    value: function moveVerticalFromLeft() {
+	      var vertChange = void 0;
+	      if (this.verticalDirection === _moving_object.DOWN) {
+	        vertChange = VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveDown');
+	      } else {
+	        vertChange = -VELOCITY_Y;
+	        this.sprite.gotoAndPlay('moveUp');
+	      }
+	      this.changeX(-this.velocityX);
+	      this.changeY(vertChange);
+	      this.direction = VERTICAL_FROM_LEFT;
+	    }
+	  }, {
+	    key: 'moveRightFromVertical',
+	    value: function moveRightFromVertical() {
+	      if (this.prev) {
+	        this.setX(this.prev.getX() - this.getWidth());
+	      } else {
+	        this.changeX(this.velocityX);
+	      }
+	      var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
+	      this.sprite.gotoAndPlay('moveRight');
+	      this.changeY(vertChange);
+	      this.direction = _moving_object.RIGHT;
+	    }
+	  }, {
+	    key: 'moveLeftFromVertical',
+	    value: function moveLeftFromVertical() {
+	      if (this.prev) {
+	        this.setX(this.prev.getX() + this.prev.getWidth());
+	      } else {
+	        this.changeX(-this.velocityX);
+	      }
+	      var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
+	      this.sprite.gotoAndPlay('moveLeft');
+	      this.changeY(vertChange);
+	      this.direction = _moving_object.LEFT;
+	    }
+	  }, {
+	    key: 'connectNext',
+	    value: function connectNext(segment) {
+	      var oldNext = this.next;
+	      this.next = segment;
+	      if (segment.prev) segment.prev.next = null;
+	      segment.prev = this;
+	      if (oldNext) {
+	        oldNext.prev = segment;
+	        segment.next = oldNext;
+	      }
+	    }
+	  }, {
+	    key: 'destroy',
+	    value: function destroy() {
+	      if (this.next) this.next.prev = null;
+	      if (this.prev) this.prev.next = null;
+	      this.next = null;
+	      this.prev = null;
+	      this.destroySprite();
+	    }
+	  }]);
+	
+	  return Segment;
+	}(_moving_object2.default);
+	
+	exports.default = Segment;
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.UP = exports.DOWN = exports.LEFT = exports.RIGHT = undefined;
+	
+	var _game_object = __webpack_require__(8);
 	
 	var _game_object2 = _interopRequireDefault(_game_object);
 	
-	var _sprite_sheets = __webpack_require__(6);
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var RIGHT = exports.RIGHT = 'RIGHT';
+	var LEFT = exports.LEFT = 'LEFT';
+	var DOWN = exports.DOWN = 'DOWN';
+	var UP = exports.UP = 'UP';
+	
+	var MovingObject = function (_GameObject) {
+	  _inherits(MovingObject, _GameObject);
+	
+	  function MovingObject(options, moveBounds) {
+	    _classCallCheck(this, MovingObject);
+	
+	    var _this = _possibleConstructorReturn(this, (MovingObject.__proto__ || Object.getPrototypeOf(MovingObject)).call(this, options, moveBounds));
+	
+	    _this.direction = options.direction || RIGHT;
+	    _this.velocityX = options.velocityX || 0;
+	    _this.velocityY = options.velocityY || 0;
+	    return _this;
+	  }
+	
+	  return MovingObject;
+	}(_game_object2.default);
+	
+	exports.default = MovingObject;
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _game_object = __webpack_require__(8);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -23897,6 +24090,118 @@
 	}(_game_object2.default);
 	
 	exports.default = SeaSponge;
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.SPIDER_MIN_VELOCITY = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(13);
+	
+	var _moving_object = __webpack_require__(16);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _diver = __webpack_require__(7);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SPIDER_SHEET = (0, _sprite_sheets.createSpiderSpriteSheet)();
+	
+	var SPIDER_MIN_VELOCITY = exports.SPIDER_MIN_VELOCITY = 4;
+	
+	var Spider = function (_MovingObject) {
+	  _inherits(Spider, _MovingObject);
+	
+	  function Spider() {
+	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	
+	    _classCallCheck(this, Spider);
+	
+	    var spiderSprite = new _createjs2.default.Sprite(SPIDER_SHEET);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 25,
+	      height: 15,
+	      sprite: spiderSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Spider.__proto__ || Object.getPrototypeOf(Spider)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.maxVelocity = options.maxVelocity || SPIDER_MIN_VELOCITY;
+	    _this.decisionPointX = _this.getX();
+	    _this.decisionPointY = _this.getY();
+	    return _this;
+	  }
+	
+	  _createClass(Spider, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      if (Math.abs(this.decisionPointX - this.getX()) <= Math.abs(this.velocityX) && Math.abs(this.decisionPointY - this.getY()) <= Math.abs(this.velocityY)) {
+	        this.updateDecisionPoint();
+	        this.updateVelocities();
+	      }
+	      this.changeX(this.velocityX);
+	      this.changeY(this.velocityY);
+	    }
+	  }, {
+	    key: 'updateDecisionPoint',
+	    value: function updateDecisionPoint() {
+	      var decisionXDelta = SPIDER_MIN_VELOCITY * (0, _util.getRandomInt)(10, 30);
+	      if (this.direction === _moving_object.LEFT) {
+	        this.decisionPointX = this.getX() - decisionXDelta;
+	      } else {
+	        this.decisionPointX = this.getX() + decisionXDelta;
+	      }
+	
+	      if (this.decisionPointY < _diver.DIVER_MIN_Y) {
+	        this.decisionPointY = _diver.DIVER_MIN_Y + SPIDER_MIN_VELOCITY * (0, _util.getRandomInt)(1, 50);
+	        if (this.decisionPointY > this.moveBounds.maxY) {
+	          this.decisionPointY = this.moveBounds.maxY - this.getHeight();
+	        }
+	      } else {
+	        this.decisionPointY = _diver.DIVER_MIN_Y - SPIDER_MIN_VELOCITY * (0, _util.getRandomInt)(20, 50);
+	      }
+	    }
+	  }, {
+	    key: 'updateVelocities',
+	    value: function updateVelocities() {
+	      var diffX = this.decisionPointX - this.getX();
+	      var diffY = this.decisionPointY - this.getY();
+	      var totalDelta = Math.sqrt(diffX * diffX + diffY * diffY);
+	
+	      var velocity = (0, _util.getRandomInt)(SPIDER_MIN_VELOCITY, this.maxVelocity);
+	      this.velocityX = diffX / totalDelta * velocity;
+	      this.velocityY = diffY / totalDelta * velocity;
+	    }
+	  }]);
+	
+	  return Spider;
+	}(_moving_object2.default);
+	
+	exports.default = Spider;
 
 /***/ }
 /******/ ]);
