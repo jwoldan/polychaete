@@ -12,17 +12,21 @@ See the [Development README](docs/development-readme.md) to learn more about the
 
 ### Game Objects
 
-All in-game characters/objects extend the `GameObject` base class.  This provides base size, movement/positioning, and sprite functionality.  Functionality unique to specific subclasses includes the following:
+All in-game characters/objects extend the `GameObject` base class.  This provides base size, movement/positioning, and sprite functionality.  Objects that move automatically based on time extend `MovingObject`, a subclass of `GameObject`.  This provides direction and velocity attributes and a generic `updatePosition` method.  Functionality unique to specific subclasses includes the following:
 
 - `Diver`: Laser firing ability.
-- `LaserBeam`: laser beam-specific vertical movement.
+- `LaserBeam`: Laser beams move vertically in a straight line, so they use the `updatePosition` method inherited from `MovingObject`.
 - `SeaSponge`: Handling of multiple laser beam hits.
+- `Shrimp`: Provides a `dropSeaSponge` method which can be called to drop a sea sponge at the shrimp's current position. (Shrimps move vertically in a straight line, so they use the `updatePosition` method inherited from `MovingObject`.)
+- `Spider`: Provides a custom `updatePosition` method with helper methods to change direction and velocity semi-randomly at 'decision points'.
 - `Segment`: Polychaete segment movement and connection to adjacent segments (linked-list style).
 - `Head`: Class/static method to create a new Head based on an existing Segment.
 
 ### User Interface
 
-- The `Game` class manages the overall game state, including movement and collision detection.  
+- The `Game` class manages the overall game state.  Due to the complexity of the associated code, position updates and collision detection were moved into separate classes:
+  - The `PositionHandler` class updates the positions of all `MovingObject`s.
+  - The `CollisionHandler` class handles collision detection for in game objects.
 - The `Board` class maintains position and rendering of the various game objects on the Canvas, as well as addition and removal of those objects.
 - The `KeyHandler` provides a keyboard-based user interface to move the diver and fire laser beams.
 - The `UIHandler` manages state and interactivity of dynamic HTML elements other than the canvas itself, such as popups and buttons.
