@@ -54,11 +54,11 @@
 	
 	var _game2 = _interopRequireDefault(_game);
 	
-	var _head = __webpack_require__(12);
+	var _head = __webpack_require__(13);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(13);
+	var _segment = __webpack_require__(14);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
@@ -112,35 +112,35 @@
 	
 	var _key_handler2 = _interopRequireDefault(_key_handler);
 	
-	var _position_handler = __webpack_require__(21);
+	var _position_handler = __webpack_require__(11);
 	
 	var _position_handler2 = _interopRequireDefault(_position_handler);
 	
-	var _collision_handler = __webpack_require__(11);
+	var _collision_handler = __webpack_require__(12);
 	
 	var _collision_handler2 = _interopRequireDefault(_collision_handler);
 	
-	var _sound_handler = __webpack_require__(15);
+	var _sound_handler = __webpack_require__(16);
 	
 	var _sound_handler2 = _interopRequireDefault(_sound_handler);
 	
-	var _board = __webpack_require__(17);
+	var _board = __webpack_require__(18);
 	
 	var _board2 = _interopRequireDefault(_board);
 	
-	var _head = __webpack_require__(12);
+	var _head = __webpack_require__(13);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(13);
+	var _segment = __webpack_require__(14);
 	
-	var _sea_sponge = __webpack_require__(18);
+	var _sea_sponge = __webpack_require__(19);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _spider = __webpack_require__(19);
+	var _spider = __webpack_require__(20);
 	
-	var _shrimp = __webpack_require__(20);
+	var _shrimp = __webpack_require__(21);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -1286,15 +1286,13 @@
 	});
 	exports.BEAM_HEIGHT = exports.BEAM_WIDTH = undefined;
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	var _createjs = __webpack_require__(1);
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game_object = __webpack_require__(9);
+	var _moving_object = __webpack_require__(15);
 	
-	var _game_object2 = _interopRequireDefault(_game_object);
+	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
@@ -1312,8 +1310,8 @@
 	
 	var LASER_BEAM_SHEET = (0, _sprite_sheets.createLaserBeamSpriteSheet)();
 	
-	var LaserBeam = function (_GameObject) {
-	  _inherits(LaserBeam, _GameObject);
+	var LaserBeam = function (_MovingObject) {
+	  _inherits(LaserBeam, _MovingObject);
 	
 	  function LaserBeam(options) {
 	    _classCallCheck(this, LaserBeam);
@@ -1323,26 +1321,124 @@
 	    var defaultOptions = {
 	      width: BEAM_WIDTH,
 	      height: BEAM_HEIGHT,
-	      sprite: laserBeamSprite
+	      sprite: laserBeamSprite,
+	      velocityY: VELOCITY_Y
 	    };
 	
 	    return _possibleConstructorReturn(this, (LaserBeam.__proto__ || Object.getPrototypeOf(LaserBeam)).call(this, Object.assign(defaultOptions, options)));
 	  }
 	
-	  _createClass(LaserBeam, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      this.changeY(VELOCITY_Y);
-	    }
-	  }]);
-	
 	  return LaserBeam;
-	}(_game_object2.default);
+	}(_moving_object2.default);
 	
 	exports.default = LaserBeam;
 
 /***/ },
 /* 11 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var PositionHandler = function () {
+	  function PositionHandler(game) {
+	    _classCallCheck(this, PositionHandler);
+	
+	    this.game = game;
+	    this.board = game.board;
+	
+	    this.updatePositions = this.updatePositions.bind(this);
+	  }
+	
+	  _createClass(PositionHandler, [{
+	    key: "updatePositions",
+	    value: function updatePositions(e) {
+	      if (e.paused) return;
+	      this.updateLaserBeamPositions();
+	      this.updateSegmentPositions();
+	      this.updateShrimpPositions();
+	      this.updateSpiderPosition();
+	    }
+	  }, {
+	    key: "updateLaserBeamPositions",
+	    value: function updateLaserBeamPositions() {
+	      var laserBeams = this.board.laserBeams;
+	      var laserIdxsToRemove = [];
+	      laserBeams.forEach(function (beam, idx) {
+	        beam.updatePosition();
+	        if (beam.getY() <= -beam.getHeight()) {
+	          laserIdxsToRemove.push(idx);
+	        }
+	      });
+	      this.game.removeLaserBeams(laserIdxsToRemove);
+	    }
+	  }, {
+	    key: "updateSegmentPositions",
+	    value: function updateSegmentPositions() {
+	      var _this = this;
+	
+	      var segments = this.board.segments;
+	      segments.forEach(function (segment) {
+	        var collided = false;
+	        _this.board.sponges.forEach(function (sponge) {
+	          if (segment.overlaps(sponge)) {
+	            collided = true;
+	          }
+	        });
+	        segment.updatePosition(collided);
+	      });
+	    }
+	  }, {
+	    key: "updateShrimpPositions",
+	    value: function updateShrimpPositions() {
+	      var _this2 = this;
+	
+	      var shrimps = this.board.shrimp;
+	      var shrimpIdxsToRemove = [];
+	      shrimps.forEach(function (shrimp, idx) {
+	        shrimp.updatePosition();
+	        if (!shrimp.isPartiallyInMoveBounds()) {
+	          shrimpIdxsToRemove.push(idx);
+	        } else {
+	          if (Math.random() < .01) {
+	            var sponges = _this2.board.sponges;
+	            var collided = false;
+	            sponges.forEach(function (sponge) {
+	              if (shrimp.overlaps(sponge)) collided = true;
+	            });
+	            if (!collided && shrimp.moveBounds.maxY - shrimp.getY() > shrimp.getHeight()) {
+	              _this2.board.addSeaSponge(shrimp.dropSeaSponge());
+	            }
+	          }
+	        }
+	      });
+	      this.game.removeShrimp(shrimpIdxsToRemove);
+	    }
+	  }, {
+	    key: "updateSpiderPosition",
+	    value: function updateSpiderPosition() {
+	      var spider = this.board.spider;
+	      if (spider) {
+	        spider.updatePosition();
+	        if (!spider.isPartiallyInMoveBounds()) this.game.removeSpider();
+	      }
+	    }
+	  }]);
+	
+	  return PositionHandler;
+	}();
+	
+	exports.default = PositionHandler;
+
+/***/ },
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1353,7 +1449,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _head = __webpack_require__(12);
+	var _head = __webpack_require__(13);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
@@ -1564,7 +1660,7 @@
 	exports.default = CollisionHandler;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1579,11 +1675,11 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _segment = __webpack_require__(13);
+	var _segment = __webpack_require__(14);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
-	var _moving_object = __webpack_require__(14);
+	var _moving_object = __webpack_require__(15);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
@@ -1630,7 +1726,7 @@
 	exports.default = Head;
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1646,7 +1742,7 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _moving_object = __webpack_require__(14);
+	var _moving_object = __webpack_require__(15);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
@@ -1832,7 +1928,7 @@
 	exports.default = Segment;
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1889,7 +1985,7 @@
 	exports.default = MovingObject;
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1900,7 +1996,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _tone = __webpack_require__(16);
+	var _tone = __webpack_require__(17);
 	
 	var _tone2 = _interopRequireDefault(_tone);
 	
@@ -2102,7 +2198,7 @@
 	exports.default = SoundHandler;
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function(root, factory){
@@ -24025,7 +24121,7 @@
 	}));
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24048,25 +24144,25 @@
 	
 	var _diver2 = _interopRequireDefault(_diver);
 	
-	var _head = __webpack_require__(12);
+	var _head = __webpack_require__(13);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(13);
+	var _segment = __webpack_require__(14);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
-	var _moving_object = __webpack_require__(14);
+	var _moving_object = __webpack_require__(15);
 	
-	var _sea_sponge = __webpack_require__(18);
+	var _sea_sponge = __webpack_require__(19);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _spider = __webpack_require__(19);
+	var _spider = __webpack_require__(20);
 	
 	var _spider2 = _interopRequireDefault(_spider);
 	
-	var _shrimp = __webpack_require__(20);
+	var _shrimp = __webpack_require__(21);
 	
 	var _shrimp2 = _interopRequireDefault(_shrimp);
 	
@@ -24348,7 +24444,7 @@
 	exports.default = Board;
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24431,7 +24527,7 @@
 	exports.default = SeaSponge;
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24449,7 +24545,7 @@
 	
 	var _util = __webpack_require__(5);
 	
-	var _moving_object = __webpack_require__(14);
+	var _moving_object = __webpack_require__(15);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
@@ -24543,7 +24639,7 @@
 	exports.default = Spider;
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24561,13 +24657,13 @@
 	
 	var _util = __webpack_require__(5);
 	
-	var _moving_object = __webpack_require__(14);
+	var _moving_object = __webpack_require__(15);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _sea_sponge = __webpack_require__(18);
+	var _sea_sponge = __webpack_require__(19);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
@@ -24615,110 +24711,6 @@
 	}(_moving_object2.default);
 	
 	exports.default = Shrimp;
-
-/***/ },
-/* 21 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var PositionHandler = function () {
-	  function PositionHandler(game) {
-	    _classCallCheck(this, PositionHandler);
-	
-	    this.game = game;
-	    this.board = game.board;
-	
-	    this.updatePositions = this.updatePositions.bind(this);
-	  }
-	
-	  _createClass(PositionHandler, [{
-	    key: "updatePositions",
-	    value: function updatePositions(e) {
-	      if (e.paused) return;
-	      this.updateLaserBeamPositions();
-	      this.updateSegmentPositions();
-	      this.updateShrimpPositions();
-	      this.updateSpiderPosition();
-	    }
-	  }, {
-	    key: "updateLaserBeamPositions",
-	    value: function updateLaserBeamPositions() {
-	      var laserBeams = this.board.laserBeams;
-	      var laserIdxsToRemove = [];
-	      laserBeams.forEach(function (beam, idx) {
-	        beam.updatePosition();
-	        if (beam.getY() <= -beam.getHeight()) {
-	          laserIdxsToRemove.push(idx);
-	        }
-	      });
-	      this.game.removeLaserBeams(laserIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateSegmentPositions",
-	    value: function updateSegmentPositions() {
-	      var _this = this;
-	
-	      var segments = this.board.segments;
-	      segments.forEach(function (segment) {
-	        var collided = false;
-	        _this.board.sponges.forEach(function (sponge) {
-	          if (segment.overlaps(sponge)) {
-	            collided = true;
-	          }
-	        });
-	        segment.updatePosition(collided);
-	      });
-	    }
-	  }, {
-	    key: "updateShrimpPositions",
-	    value: function updateShrimpPositions() {
-	      var _this2 = this;
-	
-	      var shrimps = this.board.shrimp;
-	      var shrimpIdxsToRemove = [];
-	      shrimps.forEach(function (shrimp, idx) {
-	        shrimp.updatePosition();
-	        if (!shrimp.isPartiallyInMoveBounds()) {
-	          shrimpIdxsToRemove.push(idx);
-	        } else {
-	          if (Math.random() < .01) {
-	            var sponges = _this2.board.sponges;
-	            var collided = false;
-	            sponges.forEach(function (sponge) {
-	              if (shrimp.overlaps(sponge)) collided = true;
-	            });
-	            if (!collided && shrimp.moveBounds.maxY - shrimp.getY() > shrimp.getHeight()) {
-	              _this2.board.addSeaSponge(shrimp.dropSeaSponge());
-	            }
-	          }
-	        }
-	      });
-	      this.game.removeShrimp(shrimpIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateSpiderPosition",
-	    value: function updateSpiderPosition() {
-	      var spider = this.board.spider;
-	      if (spider) {
-	        spider.updatePosition();
-	        if (!spider.isPartiallyInMoveBounds()) this.game.removeSpider();
-	      }
-	    }
-	  }]);
-	
-	  return PositionHandler;
-	}();
-	
-	exports.default = PositionHandler;
 
 /***/ }
 /******/ ]);
