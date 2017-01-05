@@ -54,11 +54,11 @@
 	
 	var _game2 = _interopRequireDefault(_game);
 	
-	var _head = __webpack_require__(13);
+	var _head = __webpack_require__(16);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(14);
+	var _segment = __webpack_require__(17);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
@@ -89,6 +89,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.SHRIMP_HIT_SCORE = exports.SPIDER_HIT_SCORE_FAR = exports.SPIDER_HIT_SCORE_MIDDLE = exports.SPIDER_HIT_SCORE_CLOSE = exports.SEGMENT_HIT_SCORE = exports.HEAD_HIT_SCORE = exports.SPONGE_HIT_SCORE = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -112,41 +113,52 @@
 	
 	var _key_handler2 = _interopRequireDefault(_key_handler);
 	
-	var _position_handler = __webpack_require__(11);
+	var _position_handler = __webpack_require__(14);
 	
 	var _position_handler2 = _interopRequireDefault(_position_handler);
 	
-	var _collision_handler = __webpack_require__(12);
+	var _collision_handler = __webpack_require__(15);
 	
 	var _collision_handler2 = _interopRequireDefault(_collision_handler);
 	
-	var _sound_handler = __webpack_require__(16);
+	var _sound_handler = __webpack_require__(18);
 	
 	var _sound_handler2 = _interopRequireDefault(_sound_handler);
 	
-	var _board = __webpack_require__(18);
+	var _board = __webpack_require__(20);
 	
 	var _board2 = _interopRequireDefault(_board);
 	
-	var _head = __webpack_require__(13);
+	var _head = __webpack_require__(16);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(14);
+	var _segment = __webpack_require__(17);
 	
-	var _sea_sponge = __webpack_require__(19);
+	var _sea_sponge = __webpack_require__(21);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _spider = __webpack_require__(20);
+	var _spider = __webpack_require__(22);
 	
-	var _shrimp = __webpack_require__(21);
+	var _shrimp = __webpack_require__(23);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var HIGH_SCORE_COOKIE = 'polychaete-high-score';
+	var INITIAL_BOMB_COUNT = 1;
+	var MAX_BOMB_COUNT = 3;
+	var NEXT_BOMB_INCREMENT = 2500;
+	
+	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
+	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
+	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
+	var SPIDER_HIT_SCORE_CLOSE = exports.SPIDER_HIT_SCORE_CLOSE = 300;
+	var SPIDER_HIT_SCORE_MIDDLE = exports.SPIDER_HIT_SCORE_MIDDLE = 600;
+	var SPIDER_HIT_SCORE_FAR = exports.SPIDER_HIT_SCORE_FAR = 900;
+	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
 	
 	var Game = function () {
 	  function Game(options) {
@@ -168,6 +180,8 @@
 	    this.keyHandler.attachListeners();
 	
 	    this.playSegmentStep = this.playSegmentStep.bind(this);
+	    this.tickBombs = this.tickBombs.bind(this);
+	    this.tickExplosions = this.tickExplosions.bind(this);
 	    this.tryAddSpider = this.tryAddSpider.bind(this);
 	    this.tryAddShrimp = this.tryAddShrimp.bind(this);
 	  }
@@ -180,6 +194,9 @@
 	      this.currentScore = 0;
 	      this.newHighScore = false;
 	      this.uiHandler.updateCurrentScore(this.currentScore);
+	      this.bombCount = INITIAL_BOMB_COUNT;
+	      this.nextBombScore = NEXT_BOMB_INCREMENT;
+	      this.uiHandler.updateBombCount(this.bombCount);
 	
 	      var board = this.board;
 	      board.reset();
@@ -203,6 +220,8 @@
 	      _createjs2.default.Ticker.on("tick", this.collisionHandler.checkCollisions);
 	      _createjs2.default.Ticker.on("tick", this.positionHandler.updatePositions);
 	      _createjs2.default.Ticker.on("tick", this.playSegmentStep);
+	      _createjs2.default.Ticker.on("tick", this.tickBombs);
+	      _createjs2.default.Ticker.on("tick", this.tickExplosions);
 	      _createjs2.default.Ticker.on("tick", this.tryAddSpider);
 	      _createjs2.default.Ticker.on("tick", this.tryAddShrimp);
 	    }
@@ -230,6 +249,23 @@
 	      this.soundHandler.playLaserSound();
 	    }
 	  }, {
+	    key: 'incrementBombCount',
+	    value: function incrementBombCount() {
+	      if (this.bombCount < MAX_BOMB_COUNT) {
+	        this.uiHandler.updateBombCount(++this.bombCount);
+	        this.soundHandler.playBombIncrement();
+	      }
+	    }
+	  }, {
+	    key: 'dropBomb',
+	    value: function dropBomb() {
+	      if (!this.started || this.paused) return;
+	      if (this.bombCount > 0) {
+	        this.board.dropBomb();
+	        this.uiHandler.updateBombCount(--this.bombCount);
+	      }
+	    }
+	  }, {
 	    key: 'playSegmentStep',
 	    value: function playSegmentStep(e) {
 	      if (e.paused) return;
@@ -244,25 +280,57 @@
 	      }
 	    }
 	  }, {
+	    key: 'tickBombs',
+	    value: function tickBombs() {
+	      var _this = this;
+	
+	      if (!this.started || this.paused) return;
+	      var bombIdxsToRemove = [];
+	      this.board.bombs.forEach(function (bomb, idx) {
+	        bomb.tickDown();
+	        if (bomb.ticks === 0) {
+	          _this.board.addExplosion(bomb.explode());
+	          bombIdxsToRemove.push(idx);
+	          _this.soundHandler.playExplosionNoise();
+	        }
+	      });
+	
+	      this.removeBombs(bombIdxsToRemove);
+	    }
+	  }, {
+	    key: 'tickExplosions',
+	    value: function tickExplosions() {
+	      if (!this.started || this.paused) return;
+	      var explosionIdxsToRemove = [];
+	      this.board.explosions.forEach(function (explosion, idx) {
+	        explosion.tickDown();
+	        if (explosion.ticks === 0) {
+	          explosionIdxsToRemove.push(idx);
+	        }
+	      });
+	
+	      this.removeExplosions(explosionIdxsToRemove);
+	    }
+	  }, {
 	    key: 'tryAddPolychaete',
 	    value: function tryAddPolychaete() {
-	      var _this = this;
+	      var _this2 = this;
 	
 	      var board = this.board;
 	
 	      if (board.segments.length === 0) {
 	        (function () {
-	          _this.startLength -= 1;
-	          if (_this.startLength === 0) {
-	            _this.startLength = _this.initialStartLength;
+	          _this2.startLength -= 1;
+	          if (_this2.startLength === 0) {
+	            _this2.startLength = _this2.initialStartLength;
 	          }
-	          if (_this.level < 6 && _this.startLength % 3 === 0) {
-	            _this.level += 1;
-	            _this.soundHandler.incrementBPM(10);
+	          if (_this2.level < 6 && _this2.startLength % 3 === 0) {
+	            _this2.level += 1;
+	            _this2.soundHandler.incrementBPM(10);
 	          }
-	          var velocityX = _segment.INITIAL_VELOCITY_X + _this.level;
-	          board.addPolychaete(_this.startLength, velocityX);
-	          if (_this.startLength !== _this.initialStartLength) {
+	          var velocityX = _segment.INITIAL_VELOCITY_X + _this2.level;
+	          board.addPolychaete(_this2.startLength, velocityX);
+	          if (_this2.startLength !== _this2.initialStartLength) {
 	            window.setTimeout(function () {
 	              board.addPolychaete(1, velocityX + 1);
 	            }, Math.random() * 1000 + 500);
@@ -303,24 +371,28 @@
 	  }, {
 	    key: 'removeSeaSponges',
 	    value: function removeSeaSponges(idxsToRemove) {
-	      var _this2 = this;
+	      var _this3 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this2.board.removeSeaSpongeAtIdx(idx);
+	        _this3.board.removeSeaSpongeAtIdx(idx);
 	      });
 	    }
 	  }, {
 	    key: 'removeSegments',
 	    value: function removeSegments(idxsToRemove) {
+	      var replace = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+	
 	      var board = this.board;
 	      var segmentsToReplace = [];
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
 	        var segment = board.segments[idx];
-	        var sponge = new _sea_sponge2.default({
-	          x: segment.getX(),
-	          y: segment.getY()
-	        });
-	        board.addSeaSponge(sponge);
+	        if (replace) {
+	          var sponge = new _sea_sponge2.default({
+	            x: segment.getX(),
+	            y: segment.getY()
+	          });
+	          board.addSeaSponge(sponge);
+	        }
 	        if (segment.next) {
 	          segmentsToReplace.push(segment.next);
 	        }
@@ -335,19 +407,37 @@
 	  }, {
 	    key: 'removeLaserBeams',
 	    value: function removeLaserBeams(idxsToRemove) {
-	      var _this3 = this;
+	      var _this4 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this3.board.removeLaserBeamAtIdx(idx);
+	        _this4.board.removeLaserBeamAtIdx(idx);
+	      });
+	    }
+	  }, {
+	    key: 'removeBombs',
+	    value: function removeBombs(idxsToRemove) {
+	      var _this5 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this5.board.removeBombAtIdx(idx);
+	      });
+	    }
+	  }, {
+	    key: 'removeExplosions',
+	    value: function removeExplosions(idxsToRemove) {
+	      var _this6 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this6.board.removeExplosionAtIdx(idx);
 	      });
 	    }
 	  }, {
 	    key: 'removeShrimp',
 	    value: function removeShrimp(idxsToRemove) {
-	      var _this4 = this;
+	      var _this7 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this4.board.removeShrimpAtIdx(idx);
+	        _this7.board.removeShrimpAtIdx(idx);
 	      });
 	      if (this.board.shrimp.length === 0) {
 	        this.soundHandler.stopShrimpOscillator();
@@ -380,6 +470,11 @@
 	      this.currentScore += addlScore;
 	      this.uiHandler.updateCurrentScore(this.currentScore);
 	
+	      if (this.currentScore >= this.nextBombScore) {
+	        this.incrementBombCount();
+	        this.nextBombScore += NEXT_BOMB_INCREMENT;
+	      }
+	
 	      if (this.currentScore > this.highScore) {
 	        this.updateHighScore(this.currentScore);
 	      }
@@ -402,7 +497,7 @@
 	  }, {
 	    key: 'endGame',
 	    value: function endGame() {
-	      var _this5 = this;
+	      var _this8 = this;
 	
 	      this.soundHandler.reset();
 	      this.setPaused(true);
@@ -410,7 +505,7 @@
 	      this.started = false;
 	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
 	      window.setTimeout(function () {
-	        return _this5.uiHandler.showGameOverPopup(_this5.newHighScore);
+	        return _this8.uiHandler.showGameOverPopup(_this8.newHighScore);
 	      }, 100);
 	    }
 	  }]);
@@ -591,7 +686,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.createShrimpSpriteSheet = exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
+	exports.createShrimpSpriteSheet = exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createExplosionSpriteSheet = exports.createBombSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
 	
 	var _createjs = __webpack_require__(1);
 	
@@ -627,6 +722,36 @@
 	    animations: {
 	      default: 0
 	    }
+	  });
+	};
+	
+	var createBombSpriteSheet = exports.createBombSpriteSheet = function createBombSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 16,
+	      height: 16
+	    },
+	    images: ['./assets/bomb.png'],
+	    animations: {
+	      default: [0, 1, 2, 1]
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createExplosionSpriteSheet = exports.createExplosionSpriteSheet = function createExplosionSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 112,
+	      height: 112
+	    },
+	    images: ['./assets/explosion.png'],
+	    animations: {
+	      default: [0, 1]
+	    },
+	    framerate: frameRate
 	  });
 	};
 	
@@ -736,6 +861,12 @@
 	var getRandomInt = exports.getRandomInt = function getRandomInt(min, max) {
 	  return Math.floor(Math.random() * (max - min + 1)) + min;
 	};
+	
+	var distance = exports.distance = function distance(x1, y1, x2, y2) {
+	  var xLength = x2 - x1;
+	  var yLength = y2 - y1;
+	  return Math.sqrt(xLength * xLength + yLength * yLength);
+	};
 
 /***/ },
 /* 6 */
@@ -758,6 +889,7 @@
 	    this.game = game;
 	    this.currentScoreElement = document.getElementById('current-score');
 	    this.highScoreElement = document.getElementById('high-score');
+	    this.bombCountElement = document.getElementById('bomb-count');
 	    this.startGamePopup = document.getElementById('popup-start');
 	    this.startButton = document.getElementById('button-start');
 	    this.gameOverPopup = document.getElementById('popup-gameover');
@@ -789,6 +921,13 @@
 	    value: function updateHighScore(newHighScore) {
 	      if (this.highScoreElement) {
 	        this.highScoreElement.innerText = newHighScore;
+	      }
+	    }
+	  }, {
+	    key: 'updateBombCount',
+	    value: function updateBombCount(newBombCount) {
+	      if (this.bombCountElement) {
+	        this.bombCountElement.innerText = newBombCount;
 	      }
 	    }
 	  }, {
@@ -859,11 +998,14 @@
 	    KEYCODE_W = 87,
 	    KEYCODE_DOWN = 40,
 	    KEYCODE_S = 83,
-	    KEYCODE_SPACE = 32;
+	    KEYCODE_SPACE = 32,
+	    KEYCODE_SHIFT = 16;
 	
-	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE];
+	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE, KEYCODE_SHIFT];
 	
 	var DIAG_MOVE_AMOUNT = Math.sqrt(_diver.DIVER_MOVE_AMOUNT * _diver.DIVER_MOVE_AMOUNT / 2);
+	var ACCELERATION_START = 0.25;
+	var ACCELERATION_INCREMENT = 0.25;
 	
 	var KeyHandler = function () {
 		function KeyHandler(game, stage) {
@@ -876,6 +1018,7 @@
 			this.handleKeyDown = this.handleKeyDown.bind(this);
 			this.handleKeyUp = this.handleKeyUp.bind(this);
 			this.handleTick = this.handleTick.bind(this);
+			this.acceleration = ACCELERATION_START;
 		}
 	
 		_createClass(KeyHandler, [{
@@ -893,6 +1036,8 @@
 			value: function handleKeyDown(e) {
 				if (e.keyCode === KEYCODE_SPACE && !this.keysDown[e.keyCode]) {
 					this.game.fireLaser();
+				} else if (e.keyCode === KEYCODE_SHIFT && !this.keysDown[e.keyCode]) {
+					this.game.dropBomb();
 				}
 				if (controlKeys.includes(e.keyCode)) {
 					e.preventDefault();
@@ -912,39 +1057,54 @@
 			value: function handleTick(e) {
 				if (e.paused) return;
 	
+				var diagMoveAmount = DIAG_MOVE_AMOUNT * this.acceleration;
+				var moveAmount = _diver.DIVER_MOVE_AMOUNT * this.acceleration;
+	
+				var move = false;
 				var diagMove = false;
 				if (this.leftUpPressed()) {
-					this.game.moveDiver(-DIAG_MOVE_AMOUNT, -DIAG_MOVE_AMOUNT);
+					this.game.moveDiver(-diagMoveAmount, -diagMoveAmount);
 					diagMove = true;
 				}
 				if (this.rightUpPressed()) {
-					this.game.moveDiver(DIAG_MOVE_AMOUNT, -DIAG_MOVE_AMOUNT);
+					this.game.moveDiver(diagMoveAmount, -diagMoveAmount);
 					diagMove = true;
 				}
 				if (this.leftDownPressed()) {
-					this.game.moveDiver(-DIAG_MOVE_AMOUNT, DIAG_MOVE_AMOUNT);
+					this.game.moveDiver(-diagMoveAmount, diagMoveAmount);
 					diagMove = true;
 				}
 				if (this.rightDownPressed()) {
-					this.game.moveDiver(DIAG_MOVE_AMOUNT, DIAG_MOVE_AMOUNT);
+					this.game.moveDiver(diagMoveAmount, diagMoveAmount);
 					diagMove = true;
 				}
 	
 				if (!diagMove) {
 					if (this.leftPressed()) {
-						this.game.moveDiver(-_diver.DIVER_MOVE_AMOUNT, 0);
+						this.game.moveDiver(-moveAmount, 0);
+						move = true;
 					}
 					if (this.rightPressed()) {
-						this.game.moveDiver(_diver.DIVER_MOVE_AMOUNT, 0);
+						this.game.moveDiver(moveAmount, 0);
+						move = true;
 					}
 	
 					if (this.upPressed()) {
-						this.game.moveDiver(0, -_diver.DIVER_MOVE_AMOUNT);
+						this.game.moveDiver(0, -moveAmount);
+						move = true;
 					}
 	
 					if (this.downPressed()) {
-						this.game.moveDiver(0, _diver.DIVER_MOVE_AMOUNT);
+						this.game.moveDiver(0, moveAmount);
+						move = true;
 					}
+				}
+	
+				if ((diagMove || move) && this.acceleration < 1) {
+					this.acceleration += ACCELERATION_INCREMENT;
+					if (this.acceleration > 1) this.acceleration = 1;
+				} else if (!diagMove && !move) {
+					this.acceleration = ACCELERATION_START;
 				}
 			}
 		}, {
@@ -1033,6 +1193,10 @@
 	
 	var _laser_beam2 = _interopRequireDefault(_laser_beam);
 	
+	var _bomb = __webpack_require__(12);
+	
+	var _bomb2 = _interopRequireDefault(_bomb);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1069,10 +1233,19 @@
 	    key: 'fireLaser',
 	    value: function fireLaser() {
 	      var laserBeam = new _laser_beam2.default({
-	        x: this.centerX() - _laser_beam.BEAM_WIDTH / 2,
+	        x: this.getCenterX() - _laser_beam.BEAM_WIDTH / 2,
 	        y: this.getY() - _laser_beam.BEAM_HEIGHT
 	      });
 	      return laserBeam;
+	    }
+	  }, {
+	    key: 'dropBomb',
+	    value: function dropBomb() {
+	      var bomb = new _bomb2.default({
+	        x: this.getX(),
+	        y: this.getY() + 2
+	      });
+	      return bomb;
 	    }
 	  }]);
 	
@@ -1196,13 +1369,13 @@
 	      return this.getY() + this.getHeight() - 1;
 	    }
 	  }, {
-	    key: "centerX",
-	    value: function centerX() {
+	    key: "getCenterX",
+	    value: function getCenterX() {
 	      return this.sprite.x + this.sprite.getBounds().width / 2;
 	    }
 	  }, {
-	    key: "centerY",
-	    value: function centerY() {
+	    key: "getCenterY",
+	    value: function getCenterY() {
 	      return this.sprite.y + this.sprite.getBounds().height / 2;
 	    }
 	  }, {
@@ -1290,7 +1463,7 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _moving_object = __webpack_require__(15);
+	var _moving_object = __webpack_require__(11);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
@@ -1335,6 +1508,221 @@
 
 /***/ },
 /* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.UP = exports.DOWN = exports.LEFT = exports.RIGHT = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _game_object = __webpack_require__(9);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var RIGHT = exports.RIGHT = 'RIGHT';
+	var LEFT = exports.LEFT = 'LEFT';
+	var DOWN = exports.DOWN = 'DOWN';
+	var UP = exports.UP = 'UP';
+	
+	var MovingObject = function (_GameObject) {
+	  _inherits(MovingObject, _GameObject);
+	
+	  function MovingObject(options, moveBounds) {
+	    _classCallCheck(this, MovingObject);
+	
+	    var _this = _possibleConstructorReturn(this, (MovingObject.__proto__ || Object.getPrototypeOf(MovingObject)).call(this, options, moveBounds));
+	
+	    _this.direction = options.direction || RIGHT;
+	    _this.velocityX = options.velocityX || 0;
+	    _this.velocityY = options.velocityY || 0;
+	    return _this;
+	  }
+	
+	  _createClass(MovingObject, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      this.changeX(this.velocityX);
+	      this.changeY(this.velocityY);
+	    }
+	  }]);
+	
+	  return MovingObject;
+	}(_game_object2.default);
+	
+	exports.default = MovingObject;
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _game_object = __webpack_require__(9);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _explosion = __webpack_require__(13);
+	
+	var _explosion2 = _interopRequireDefault(_explosion);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var BOMB_SHEET = (0, _sprite_sheets.createBombSpriteSheet)();
+	
+	var Bomb = function (_GameObject) {
+	  _inherits(Bomb, _GameObject);
+	
+	  function Bomb(options) {
+	    _classCallCheck(this, Bomb);
+	
+	    var bombSprite = new _createjs2.default.Sprite(BOMB_SHEET, 'default');
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      sprite: bombSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Bomb.__proto__ || Object.getPrototypeOf(Bomb)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.ticks = 30;
+	    return _this;
+	  }
+	
+	  _createClass(Bomb, [{
+	    key: 'tickDown',
+	    value: function tickDown() {
+	      if (this.ticks > 0) this.ticks -= 1;
+	    }
+	  }, {
+	    key: 'explode',
+	    value: function explode() {
+	      var explosion = new _explosion2.default({
+	        x: this.getCenterX() - _explosion.EXPLOSION_RADIUS,
+	        y: this.getCenterY() - _explosion.EXPLOSION_RADIUS
+	      });
+	      return explosion;
+	    }
+	  }]);
+	
+	  return Bomb;
+	}(_game_object2.default);
+	
+	exports.default = Bomb;
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.EXPLOSION_RADIUS = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(5);
+	
+	var _game_object = __webpack_require__(9);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var EXPLOSION_SHEET = (0, _sprite_sheets.createExplosionSpriteSheet)();
+	
+	var EXPLOSION_RADIUS = exports.EXPLOSION_RADIUS = 56;
+	
+	var Explosion = function (_GameObject) {
+	  _inherits(Explosion, _GameObject);
+	
+	  function Explosion(options) {
+	    _classCallCheck(this, Explosion);
+	
+	    var explosionSprite = new _createjs2.default.Sprite(EXPLOSION_SHEET, 'default');
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: EXPLOSION_RADIUS * 2,
+	      height: EXPLOSION_RADIUS * 2,
+	      sprite: explosionSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Explosion.__proto__ || Object.getPrototypeOf(Explosion)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.ticks = 20;
+	    return _this;
+	  }
+	
+	  _createClass(Explosion, [{
+	    key: 'tickDown',
+	    value: function tickDown() {
+	      if (this.ticks > 0) this.ticks -= 1;
+	    }
+	  }, {
+	    key: 'overlaps',
+	    value: function overlaps(gameObject) {
+	      return this.pointInRadius(gameObject.getX(), gameObject.getY()) || this.pointInRadius(gameObject.getX(), gameObject.getMaxY()) || this.pointInRadius(gameObject.getMaxX(), gameObject.getY()) || this.pointInRadius(gameObject.getMaxX(), gameObject.getMaxY());
+	    }
+	  }, {
+	    key: 'pointInRadius',
+	    value: function pointInRadius(x, y) {
+	      return (0, _util.distance)(this.getCenterX(), this.getCenterY(), x, y) <= EXPLOSION_RADIUS;
+	    }
+	  }]);
+	
+	  return Explosion;
+	}(_game_object2.default);
+	
+	exports.default = Explosion;
+
+/***/ },
+/* 14 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1409,10 +1797,16 @@
 	        } else {
 	          if (Math.random() < .01) {
 	            var sponges = _this2.board.sponges;
+	            var segments = _this2.board.segments;
 	            var collided = false;
 	            sponges.forEach(function (sponge) {
 	              if (shrimp.overlaps(sponge)) collided = true;
 	            });
+	            if (!collided) {
+	              segments.forEach(function (segment) {
+	                if (shrimp.overlaps(segment)) collided = true;
+	              });
+	            }
 	            if (!collided && shrimp.moveBounds.maxY - shrimp.getY() > shrimp.getHeight()) {
 	              _this2.board.addSeaSponge(shrimp.dropSeaSponge());
 	            }
@@ -1438,7 +1832,7 @@
 	exports.default = PositionHandler;
 
 /***/ },
-/* 12 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1449,9 +1843,11 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _head = __webpack_require__(13);
+	var _head = __webpack_require__(16);
 	
 	var _head2 = _interopRequireDefault(_head);
+	
+	var _game = __webpack_require__(2);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -1474,6 +1870,7 @@
 	      var game = this.game;
 	      if (e.paused) return;
 	      if (game.started) {
+	        this.checkExplosionCollisions();
 	        this.checkSegmentDiverCollisions();
 	        this.checkSpiderCollisions();
 	        this.checkShrimpDiverCollisions();
@@ -1592,7 +1989,7 @@
 	        if (beam.overlaps(sponges[i])) {
 	          sponges[i].handleHit();
 	          if (sponges[i].hits === 0) {
-	            this.game.incrementScore(1);
+	            this.game.incrementScore(_game.SPONGE_HIT_SCORE);
 	            this.soundHandler.playSeaSpongeDestroy();
 	            return i;
 	          } else {
@@ -1611,9 +2008,9 @@
 	      for (var i = 0; i < segments.length; i++) {
 	        if (beam.overlaps(segments[i])) {
 	          if (segments[i] instanceof _head2.default) {
-	            game.incrementScore(100);
+	            game.incrementScore(_game.HEAD_HIT_SCORE);
 	          } else {
-	            game.incrementScore(10);
+	            game.incrementScore(_game.SEGMENT_HIT_SCORE);
 	          }
 	          this.soundHandler.playSegmentHit();
 	          return i;
@@ -1628,11 +2025,11 @@
 	      var spider = this.board.spider;
 	      if (spider && beam.overlaps(spider)) {
 	        if (spider.getY() > 500) {
-	          game.incrementScore(300);
+	          game.incrementScore(_game.SPIDER_HIT_SCORE_CLOSE);
 	        } else if (spider.getY() > 400) {
-	          game.incrementScore(600);
+	          game.incrementScore(_game.SPIDER_HIT_SCORE_MIDDLE);
 	        } else {
-	          game.incrementScore(900);
+	          game.incrementScore(_game.SPIDER_HIT_SCORE_FAR);
 	        }
 	        this.soundHandler.playSpiderHit();
 	        return true;
@@ -1645,12 +2042,67 @@
 	      var shrimp = this.board.shrimp;
 	      for (var i = 0; i < shrimp.length; i++) {
 	        if (beam.overlaps(shrimp[i])) {
-	          this.game.incrementScore(200);
+	          this.game.incrementScore(_game.SHRIMP_HIT_SCORE);
 	          this.soundHandler.playShrimpHit();
 	          return i;
 	        }
 	      }
 	      return false;
+	    }
+	  }, {
+	    key: 'checkExplosionCollisions',
+	    value: function checkExplosionCollisions() {
+	      var _this4 = this;
+	
+	      var game = this.game;
+	      var explosions = this.board.explosions;
+	      var sponges = this.board.sponges;
+	      var segments = this.board.segments;
+	      var shrimps = this.board.shrimp;
+	      var spider = this.board.spider;
+	      var spongeIdxsToRemove = [];
+	      var segmentIdxsToRemove = [];
+	      var shrimpIdxsToRemove = [];
+	
+	      explosions.forEach(function (explosion) {
+	        if (explosion.overlaps(_this4.board.diver)) {
+	          game.endGame();
+	        }
+	
+	        if (game.started) {
+	          if (spider) {
+	            if (explosion.overlaps(spider)) {
+	              game.removeSpider();
+	              game.incrementScore(_game.SPIDER_HIT_SCORE_CLOSE / 2);
+	            }
+	          }
+	          sponges.forEach(function (sponge, idx) {
+	            if (explosion.overlaps(sponge)) {
+	              spongeIdxsToRemove.push(idx);
+	            }
+	          });
+	          segments.forEach(function (segment, idx) {
+	            if (explosion.overlaps(segment)) {
+	              segmentIdxsToRemove.push(idx);
+	              if (segment instanceof _head2.default) {
+	                game.incrementScore(_game.HEAD_HIT_SCORE / 2);
+	              } else {
+	                game.incrementScore(_game.SEGMENT_HIT_SCORE / 2);
+	              }
+	            }
+	          });
+	          shrimps.forEach(function (shrimp, idx) {
+	            if (explosion.overlaps(shrimp)) {
+	              shrimpIdxsToRemove.push(idx);
+	              game.incrementScore(_game.SHRIMP_HIT_SCORE / 2);
+	            }
+	          });
+	        }
+	      });
+	
+	      game.removeSeaSponges(spongeIdxsToRemove);
+	      game.removeSegments(segmentIdxsToRemove, false);
+	      game.removeShrimp(shrimpIdxsToRemove);
 	    }
 	  }]);
 	
@@ -1660,7 +2112,7 @@
 	exports.default = CollisionHandler;
 
 /***/ },
-/* 13 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1675,11 +2127,11 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _segment = __webpack_require__(14);
+	var _segment = __webpack_require__(17);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
-	var _moving_object = __webpack_require__(15);
+	var _moving_object = __webpack_require__(11);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
@@ -1726,7 +2178,7 @@
 	exports.default = Head;
 
 /***/ },
-/* 14 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1742,7 +2194,7 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _moving_object = __webpack_require__(15);
+	var _moving_object = __webpack_require__(11);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
@@ -1876,27 +2328,29 @@
 	  }, {
 	    key: 'moveRightFromVertical',
 	    value: function moveRightFromVertical() {
-	      if (this.prev) {
+	      if (this.prev && this.prev.direction === _moving_object.RIGHT) {
 	        this.setX(this.prev.getX() - this.getWidth());
+	        this.setY(this.prev.getY());
 	      } else {
 	        this.changeX(this.velocityX);
+	        var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
+	        this.changeY(vertChange);
 	      }
-	      var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
 	      this.sprite.gotoAndPlay('moveRight');
-	      this.changeY(vertChange);
 	      this.direction = _moving_object.RIGHT;
 	    }
 	  }, {
 	    key: 'moveLeftFromVertical',
 	    value: function moveLeftFromVertical() {
-	      if (this.prev) {
+	      if (this.prev && this.prev.direction === _moving_object.LEFT) {
 	        this.setX(this.prev.getX() + this.prev.getWidth());
+	        this.setY(this.prev.getY());
 	      } else {
 	        this.changeX(-this.velocityX);
+	        var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
+	        this.changeY(vertChange);
 	      }
-	      var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
 	      this.sprite.gotoAndPlay('moveLeft');
-	      this.changeY(vertChange);
 	      this.direction = _moving_object.LEFT;
 	    }
 	  }, {
@@ -1928,64 +2382,7 @@
 	exports.default = Segment;
 
 /***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.UP = exports.DOWN = exports.LEFT = exports.RIGHT = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _game_object = __webpack_require__(9);
-	
-	var _game_object2 = _interopRequireDefault(_game_object);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var RIGHT = exports.RIGHT = 'RIGHT';
-	var LEFT = exports.LEFT = 'LEFT';
-	var DOWN = exports.DOWN = 'DOWN';
-	var UP = exports.UP = 'UP';
-	
-	var MovingObject = function (_GameObject) {
-	  _inherits(MovingObject, _GameObject);
-	
-	  function MovingObject(options, moveBounds) {
-	    _classCallCheck(this, MovingObject);
-	
-	    var _this = _possibleConstructorReturn(this, (MovingObject.__proto__ || Object.getPrototypeOf(MovingObject)).call(this, options, moveBounds));
-	
-	    _this.direction = options.direction || RIGHT;
-	    _this.velocityX = options.velocityX || 0;
-	    _this.velocityY = options.velocityY || 0;
-	    return _this;
-	  }
-	
-	  _createClass(MovingObject, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      this.changeX(this.velocityX);
-	      this.changeY(this.velocityY);
-	    }
-	  }]);
-	
-	  return MovingObject;
-	}(_game_object2.default);
-	
-	exports.default = MovingObject;
-
-/***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1996,7 +2393,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _tone = __webpack_require__(17);
+	var _tone = __webpack_require__(19);
 	
 	var _tone2 = _interopRequireDefault(_tone);
 	
@@ -2006,89 +2403,152 @@
 	
 	var SoundHandler = function () {
 	  function SoundHandler() {
-	    var _this = this;
-	
 	    _classCallCheck(this, SoundHandler);
 	
 	    var shrimpOscillatorPlaying = false;
 	
-	    // Add volume node - adjust master volume
-	    var synthVolume = new _tone2.default.Volume({
-	      volume: -12
-	    }).toMaster();
-	
-	    // Add distortion effect
-	    var synthDistortion = new _tone2.default.Distortion({
-	      distortion: 1,
-	      oversample: '4x',
-	      wet: 0.7
-	    });
-	
-	    synthDistortion.connect(synthVolume);
-	
-	    var oscillatorVolume = new _tone2.default.Volume({
-	      volume: -20
-	    }).toMaster();
-	
-	    var oscillatorDistortion = new _tone2.default.Distortion({
-	      distortion: 1,
-	      oversample: '4x',
-	      wet: 0.5
-	    });
-	
-	    oscillatorDistortion.connect(oscillatorVolume);
-	
-	    var stepVolume = new _tone2.default.Volume({
-	      volume: -16
-	    }).toMaster();
-	
-	    this.laserSynth = new _tone2.default.MonoSynth({
-	      oscillator: {
-	        type: 'square'
-	      },
-	      envelope: {
-	        release: 0.7
-	      },
-	      filterEnvelope: {
-	        release: 1,
-	        baseFrequency: "D#7",
-	        octaves: 10
-	      }
-	    });
-	
-	    this.synth = new _tone2.default.Synth({
-	      oscillator: { type: 'square' },
-	      envelope: { release: 0.2 }
-	    });
-	
-	    this.stepNoise = new _tone2.default.NoiseSynth({
-	      noise: {
-	        type: 'pink'
-	      },
-	      envelope: {
-	        decay: 0.01
-	      }
-	    });
-	
-	    this.spiderSequence = new _tone2.default.Sequence(function (time, note) {
-	      _this.synth.triggerAttackRelease(note, '60hz', undefined, 0.1);
-	    }, ['C4', 'D4', 'G4', 'F#4'], "16n");
-	    this.spiderSequence.humanize = true;
-	
-	    this.shrimpOscillator = new _tone2.default.Oscillator();
-	
-	    this.shrimpOscillator.connect(oscillatorDistortion);
-	
-	    // connect synths to distortion/volume/master chain
-	    this.laserSynth.connect(synthDistortion);
-	    this.synth.connect(synthDistortion);
-	
-	    this.stepNoise.connect(stepVolume);
-	
+	    this.createSynth();
+	    this.createLaserSynth();
+	    this.createStepNoise();
+	    this.createExplosionNoise();
+	    this.createBombIncrementSequence();
+	    this.createSpiderSequence();
+	    this.createShrimpOscillator();
 	    this.resetBPM();
 	  }
 	
 	  _createClass(SoundHandler, [{
+	    key: 'synthChainCreated',
+	    value: function synthChainCreated() {
+	      return typeof this.synthDistortion !== 'undefined' && typeof this.synthVolume !== 'undefined';
+	    }
+	  }, {
+	    key: 'createSynthChain',
+	    value: function createSynthChain() {
+	      this.synthDistortion = new _tone2.default.Distortion({
+	        distortion: 1,
+	        oversample: '4x',
+	        wet: 0.7
+	      });
+	
+	      this.synthVolume = new _tone2.default.Volume({
+	        volume: -12
+	      }).toMaster();
+	      this.synthDistortion.connect(this.synthVolume);
+	    }
+	  }, {
+	    key: 'createSynth',
+	    value: function createSynth() {
+	      this.synth = new _tone2.default.Synth({
+	        oscillator: { type: 'square' },
+	        envelope: { release: 0.2 }
+	      });
+	
+	      if (!this.synthChainCreated()) this.createSynthChain();
+	      this.synth.connect(this.synthDistortion);
+	    }
+	  }, {
+	    key: 'createLaserSynth',
+	    value: function createLaserSynth() {
+	      this.laserSynth = new _tone2.default.MonoSynth({
+	        oscillator: {
+	          type: 'square'
+	        },
+	        envelope: {
+	          release: 0.7
+	        },
+	        filterEnvelope: {
+	          release: 1,
+	          baseFrequency: "D#7",
+	          octaves: 10
+	        }
+	      });
+	
+	      if (!this.synthChainCreated()) this.createSynthChain();
+	      this.laserSynth.connect(this.synthDistortion);
+	    }
+	  }, {
+	    key: 'createStepNoise',
+	    value: function createStepNoise() {
+	      this.stepNoise = new _tone2.default.NoiseSynth({
+	        noise: {
+	          type: 'pink'
+	        },
+	        envelope: {
+	          decay: 0.01
+	        }
+	      });
+	
+	      var stepVolume = new _tone2.default.Volume({
+	        volume: -16
+	      }).toMaster();
+	
+	      this.stepNoise.connect(stepVolume);
+	    }
+	  }, {
+	    key: 'createExplosionNoise',
+	    value: function createExplosionNoise() {
+	      this.explosionNoise = new _tone2.default.NoiseSynth("white");
+	
+	      var explosionFilter = new _tone2.default.AutoFilter({
+	        frequency: "100hz",
+	        min: 200,
+	        max: 1000
+	      }).start();
+	
+	      var explosionReverb = new _tone2.default.JCReverb(0.2);
+	
+	      var explosionVolume = new _tone2.default.Volume({
+	        volume: -12
+	      }).toMaster();
+	
+	      explosionReverb.connect(explosionVolume);
+	      explosionFilter.connect(explosionReverb);
+	      this.explosionNoise.connect(explosionFilter);
+	    }
+	  }, {
+	    key: 'createBombIncrementSequence',
+	    value: function createBombIncrementSequence() {
+	      var _this = this;
+	
+	      this.bombIncrementSequence = new _tone2.default.Sequence(function (time, note) {
+	        if (note) {
+	          _this.synth.triggerAttackRelease(note, '60hz', undefined, 0.5);
+	        } else {
+	          _this.bombIncrementSequence.stop();
+	        }
+	      }, ['G#4', 'B#4', 'D#5', 'G#5', false], "16n");
+	      this.bombIncrementSequence.loop = false;
+	    }
+	  }, {
+	    key: 'createSpiderSequence',
+	    value: function createSpiderSequence() {
+	      var _this2 = this;
+	
+	      this.spiderSequence = new _tone2.default.Sequence(function (time, note) {
+	        _this2.synth.triggerAttackRelease(note, '60hz', undefined, 0.1);
+	      }, ['C#4', 'D#4', 'G#4', 'F4'], "16n");
+	      this.spiderSequence.humanize = true;
+	    }
+	  }, {
+	    key: 'createShrimpOscillator',
+	    value: function createShrimpOscillator() {
+	      this.shrimpOscillator = new _tone2.default.Oscillator();
+	
+	      var oscillatorDistortion = new _tone2.default.Distortion({
+	        distortion: 1,
+	        oversample: '4x',
+	        wet: 0.5
+	      });
+	
+	      var oscillatorVolume = new _tone2.default.Volume({
+	        volume: -20
+	      }).toMaster();
+	
+	      oscillatorDistortion.connect(oscillatorVolume);
+	      this.shrimpOscillator.connect(oscillatorDistortion);
+	    }
+	  }, {
 	    key: 'pauseTransport',
 	    value: function pauseTransport(paused) {
 	      if (paused) {
@@ -2105,12 +2565,12 @@
 	  }, {
 	    key: 'playSeaSpongeHit',
 	    value: function playSeaSpongeHit() {
-	      this.synth.triggerAttackRelease('A2', '40hz');
+	      this.synth.triggerAttackRelease('A#2', '40hz');
 	    }
 	  }, {
 	    key: 'playSeaSpongeDestroy',
 	    value: function playSeaSpongeDestroy() {
-	      this.synth.triggerAttackRelease('A1', '40hz');
+	      this.synth.triggerAttackRelease('A#1', '40hz');
 	    }
 	  }, {
 	    key: 'playSegmentHit',
@@ -2125,12 +2585,22 @@
 	  }, {
 	    key: 'playShrimpHit',
 	    value: function playShrimpHit() {
-	      this.synth.triggerAttackRelease('A5', '20hz');
+	      this.synth.triggerAttackRelease('A#5', '20hz');
 	    }
 	  }, {
 	    key: 'playSegmentStep',
 	    value: function playSegmentStep() {
 	      this.stepNoise.triggerAttackRelease('1hz');
+	    }
+	  }, {
+	    key: 'playBombIncrement',
+	    value: function playBombIncrement() {
+	      this.bombIncrementSequence.start();
+	    }
+	  }, {
+	    key: 'playExplosionNoise',
+	    value: function playExplosionNoise() {
+	      this.explosionNoise.triggerAttackRelease('60hz');
 	    }
 	  }, {
 	    key: 'startSpiderSequence',
@@ -2198,7 +2668,7 @@
 	exports.default = SoundHandler;
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function(root, factory){
@@ -24121,7 +24591,7 @@
 	}));
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24144,25 +24614,25 @@
 	
 	var _diver2 = _interopRequireDefault(_diver);
 	
-	var _head = __webpack_require__(13);
+	var _head = __webpack_require__(16);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(14);
+	var _segment = __webpack_require__(17);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
-	var _moving_object = __webpack_require__(15);
+	var _moving_object = __webpack_require__(11);
 	
-	var _sea_sponge = __webpack_require__(19);
+	var _sea_sponge = __webpack_require__(21);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _spider = __webpack_require__(20);
+	var _spider = __webpack_require__(22);
 	
 	var _spider2 = _interopRequireDefault(_spider);
 	
-	var _shrimp = __webpack_require__(21);
+	var _shrimp = __webpack_require__(23);
 	
 	var _shrimp2 = _interopRequireDefault(_shrimp);
 	
@@ -24177,6 +24647,8 @@
 	    this.stage = options.stage;
 	
 	    this.laserBeams = [];
+	    this.bombs = [];
+	    this.explosions = [];
 	    this.segments = [];
 	    this.sponges = [];
 	    this.shrimp = [];
@@ -24190,6 +24662,8 @@
 	    value: function reset() {
 	      this.removeDiver();
 	      this.removeAllLaserBeams();
+	      this.removeAllBombs();
+	      this.removeAllExplosions();
 	      this.removeAllSeaSponges();
 	      this.removeAllSegments();
 	      this.removeAllShrimp();
@@ -24340,9 +24814,28 @@
 	      this.laserBeams.push(beam);
 	    }
 	  }, {
+	    key: 'addBomb',
+	    value: function addBomb(bomb) {
+	      bomb.setStage(this.stage);
+	      this.stage.addChild(bomb.sprite);
+	      this.bombs.push(bomb);
+	    }
+	  }, {
+	    key: 'addExplosion',
+	    value: function addExplosion(explosion) {
+	      explosion.setStage(this.stage);
+	      this.stage.addChild(explosion.sprite);
+	      this.explosions.push(explosion);
+	    }
+	  }, {
 	    key: 'fireLaser',
 	    value: function fireLaser() {
 	      this.addLaserBeam(this.diver.fireLaser());
+	    }
+	  }, {
+	    key: 'dropBomb',
+	    value: function dropBomb() {
+	      this.addBomb(this.diver.dropBomb());
 	    }
 	  }, {
 	    key: 'removeSeaSpongeAtIdx',
@@ -24430,10 +24923,51 @@
 	      this.laserBeams = [];
 	    }
 	  }, {
+	    key: 'removeBombAtIdx',
+	    value: function removeBombAtIdx(idx) {
+	      var bomb = this.bombs[idx];
+	      this.stage.removeChild(bomb.sprite);
+	      bomb.destroy();
+	      this.bombs.splice(idx, 1);
+	    }
+	  }, {
+	    key: 'removeAllBombs',
+	    value: function removeAllBombs() {
+	      var _this6 = this;
+	
+	      this.bombs.forEach(function (bomb) {
+	        _this6.stage.removeChild(bomb.sprite);
+	        bomb.destroy();
+	      });
+	      this.bombs = [];
+	    }
+	  }, {
+	    key: 'removeExplosionAtIdx',
+	    value: function removeExplosionAtIdx(idx) {
+	      var explosion = this.explosions[idx];
+	      this.stage.removeChild(explosion.sprite);
+	      explosion.destroy();
+	      this.explosions.splice(idx, 1);
+	    }
+	  }, {
+	    key: 'removeAllExplosions',
+	    value: function removeAllExplosions() {
+	      var _this7 = this;
+	
+	      this.explosions.forEach(function (explosion) {
+	        _this7.stage.removeChild(explosion.sprite);
+	        explosion.destroy();
+	      });
+	      this.explosions = [];
+	    }
+	  }, {
 	    key: 'pauseAnimations',
 	    value: function pauseAnimations(paused) {
 	      this.segments.forEach(function (segment) {
 	        segment.sprite.paused = paused;
+	      });
+	      this.explosions.forEach(function (explosion) {
+	        explosion.sprite.paused = paused;
 	      });
 	    }
 	  }]);
@@ -24444,7 +24978,7 @@
 	exports.default = Board;
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24527,7 +25061,7 @@
 	exports.default = SeaSponge;
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24545,7 +25079,7 @@
 	
 	var _util = __webpack_require__(5);
 	
-	var _moving_object = __webpack_require__(15);
+	var _moving_object = __webpack_require__(11);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
@@ -24639,7 +25173,7 @@
 	exports.default = Spider;
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24657,13 +25191,13 @@
 	
 	var _util = __webpack_require__(5);
 	
-	var _moving_object = __webpack_require__(15);
+	var _moving_object = __webpack_require__(11);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _sea_sponge = __webpack_require__(19);
+	var _sea_sponge = __webpack_require__(21);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
