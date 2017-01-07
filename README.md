@@ -22,6 +22,7 @@ All in-game characters/objects extend the `GameObject` base class.  This provide
 - `Crab`: Provides a custom `updatePosition` method with helper methods to change direction and velocity semi-randomly at 'decision points'.
 - `Segment`: Polychaete segment movement and connection to adjacent segments (linked-list style).
 - `Head`: Class/static method to create a new Head based on an existing Segment.
+- `Score`: Class/static method to display the associated score over an enemy that has been destroyed.
 
 ### User Interface
 
