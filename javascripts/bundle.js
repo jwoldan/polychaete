@@ -50,7 +50,7 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game = __webpack_require__(2);
+	var _game = __webpack_require__(28);
 	
 	var _game2 = _interopRequireDefault(_game);
 	
@@ -81,470 +81,7 @@
 	module.exports = createjs;
 
 /***/ },
-/* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _jsCookie = __webpack_require__(3);
-	
-	var _jsCookie2 = _interopRequireDefault(_jsCookie);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _util = __webpack_require__(5);
-	
-	var _ui_handler = __webpack_require__(6);
-	
-	var _ui_handler2 = _interopRequireDefault(_ui_handler);
-	
-	var _key_handler = __webpack_require__(7);
-	
-	var _key_handler2 = _interopRequireDefault(_key_handler);
-	
-	var _position_handler = __webpack_require__(14);
-	
-	var _position_handler2 = _interopRequireDefault(_position_handler);
-	
-	var _collision_handler = __webpack_require__(15);
-	
-	var _collision_handler2 = _interopRequireDefault(_collision_handler);
-	
-	var _sound_handler = __webpack_require__(21);
-	
-	var _sound_handler2 = _interopRequireDefault(_sound_handler);
-	
-	var _board = __webpack_require__(23);
-	
-	var _board2 = _interopRequireDefault(_board);
-	
-	var _bubble = __webpack_require__(24);
-	
-	var _bubble2 = _interopRequireDefault(_bubble);
-	
-	var _head = __webpack_require__(16);
-	
-	var _head2 = _interopRequireDefault(_head);
-	
-	var _segment = __webpack_require__(17);
-	
-	var _sea_sponge = __webpack_require__(25);
-	
-	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
-	
-	var _crab = __webpack_require__(26);
-	
-	var _shrimp = __webpack_require__(27);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var HIGH_SCORE_COOKIE = 'polychaete-high-score';
-	var INITIAL_BOMB_COUNT = 1;
-	var MAX_BOMB_COUNT = 3;
-	var NEXT_BOMB_INCREMENT = 2500;
-	
-	var Game = function () {
-	  function Game(options) {
-	    _classCallCheck(this, Game);
-	
-	    this.stage = options.stage;
-	    this.board = new _board2.default(options);
-	    this.uiHandler = new _ui_handler2.default(this);
-	    this.keyHandler = new _key_handler2.default(this);
-	    this.soundHandler = new _sound_handler2.default();
-	    this.positionHandler = new _position_handler2.default(this);
-	    this.collisionHandler = new _collision_handler2.default(this);
-	    this.initialStartLength = options.initialStartLength || 12;
-	    this.started = false;
-	
-	    var cookieHighScore = _jsCookie2.default.get(HIGH_SCORE_COOKIE);
-	    this.updateHighScore(cookieHighScore ? parseInt(cookieHighScore) : 0);
-	
-	    this.keyHandler.attachListeners();
-	    this.board.addBubbles(20);
-	
-	    this.playSegmentStep = this.playSegmentStep.bind(this);
-	    this.tickBombs = this.tickBombs.bind(this);
-	    this.tickExplosions = this.tickExplosions.bind(this);
-	    this.tryAddBubble = this.tryAddBubble.bind(this);
-	    this.tryAddCrab = this.tryAddCrab.bind(this);
-	    this.tryAddShrimp = this.tryAddShrimp.bind(this);
-	  }
-	
-	  _createClass(Game, [{
-	    key: 'initialize',
-	    value: function initialize(startGame) {
-	      this.startLength = this.initialStartLength;
-	      this.level = 0;
-	      this.currentScore = 0;
-	      this.newHighScore = false;
-	      this.uiHandler.updateCurrentScore(this.currentScore);
-	      this.bombCount = INITIAL_BOMB_COUNT;
-	      this.nextBombScore = NEXT_BOMB_INCREMENT;
-	      this.uiHandler.updateBombCount(this.bombCount);
-	
-	      var board = this.board;
-	      board.reset();
-	      if (startGame) {
-	        board.addDiver();
-	        this.started = true;
-	        this.soundHandler.pause(false);
-	      }
-	      board.addSeaSponges(30);
-	      board.addPolychaete(this.startLength, _segment.INITIAL_VELOCITY_X);
-	
-	      this.paused = false;
-	      _createjs2.default.Ticker.paused = false;
-	    }
-	  }, {
-	    key: 'run',
-	    value: function run() {
-	      _createjs2.default.Ticker.setFPS(_sprite_sheets.FPS);
-	      _createjs2.default.Ticker.on("tick", this.stage);
-	      _createjs2.default.Ticker.on("tick", this.keyHandler.handleTick);
-	      _createjs2.default.Ticker.on("tick", this.collisionHandler.checkCollisions);
-	      _createjs2.default.Ticker.on("tick", this.positionHandler.updatePositions);
-	      _createjs2.default.Ticker.on("tick", this.playSegmentStep);
-	      _createjs2.default.Ticker.on("tick", this.tickBombs);
-	      _createjs2.default.Ticker.on("tick", this.tickExplosions);
-	      _createjs2.default.Ticker.on("tick", this.tryAddBubble);
-	      _createjs2.default.Ticker.on("tick", this.tryAddCrab);
-	      _createjs2.default.Ticker.on("tick", this.tryAddShrimp);
-	    }
-	  }, {
-	    key: 'moveDiver',
-	    value: function moveDiver(xDiff, yDiff) {
-	      if (!this.started || this.paused) return;
-	
-	      var board = this.board;
-	      var diver = board.diver;
-	      var blocked = false;
-	      diver.changeBoundedPos(xDiff, yDiff);
-	      board.sponges.forEach(function (sponge) {
-	        if (sponge.overlaps(diver)) {
-	          blocked = true;
-	        }
-	      });
-	      if (blocked) diver.changeBoundedPos(-xDiff, -yDiff);
-	    }
-	  }, {
-	    key: 'fireLaser',
-	    value: function fireLaser() {
-	      if (!this.started || this.paused) return;
-	      this.board.fireLaser();
-	      this.soundHandler.playLaserSound();
-	    }
-	  }, {
-	    key: 'incrementBombCount',
-	    value: function incrementBombCount() {
-	      if (this.bombCount < MAX_BOMB_COUNT) {
-	        this.uiHandler.updateBombCount(++this.bombCount);
-	        this.soundHandler.playBombIncrement();
-	      }
-	    }
-	  }, {
-	    key: 'dropBomb',
-	    value: function dropBomb() {
-	      if (!this.started || this.paused) return;
-	      if (this.bombCount > 0) {
-	        this.board.dropBomb();
-	        this.uiHandler.updateBombCount(--this.bombCount);
-	      }
-	    }
-	  }, {
-	    key: 'playSegmentStep',
-	    value: function playSegmentStep(e) {
-	      if (e.paused) return;
-	      var segments = this.board.segments;
-	      if (segments.length > 0 && this.started) {
-	        var maxVelocity = segments.reduce(function (a, b) {
-	          return a.velocityX > b.velocityX ? a.velocityX : b.velocityX;
-	        }, this);
-	        if (_createjs2.default.Ticker.getTicks() % Math.round(32 / maxVelocity) === 0) {
-	          this.soundHandler.playSegmentStep();
-	        }
-	      }
-	    }
-	  }, {
-	    key: 'tickBombs',
-	    value: function tickBombs() {
-	      var _this = this;
-	
-	      if (!this.started || this.paused) return;
-	      var bombIdxsToRemove = [];
-	      this.board.bombs.forEach(function (bomb, idx) {
-	        bomb.tickDown();
-	        if (bomb.ticks === 0) {
-	          _this.board.addExplosion(bomb.explode());
-	          bombIdxsToRemove.push(idx);
-	          _this.soundHandler.playExplosionNoise();
-	        }
-	      });
-	
-	      this.removeBombs(bombIdxsToRemove);
-	    }
-	  }, {
-	    key: 'tickExplosions',
-	    value: function tickExplosions() {
-	      if (!this.started || this.paused) return;
-	      var explosionIdxsToRemove = [];
-	      this.board.explosions.forEach(function (explosion, idx) {
-	        explosion.tickDown();
-	        if (explosion.ticks === 0) {
-	          explosionIdxsToRemove.push(idx);
-	        }
-	      });
-	
-	      this.removeExplosions(explosionIdxsToRemove);
-	    }
-	  }, {
-	    key: 'tryAddBubble',
-	    value: function tryAddBubble(e) {
-	      if (e.paused) return;
-	      var board = this.board;
-	      if (_createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
-	        var x = this.stage.canvas.width * Math.random();
-	        var y = this.stage.canvas.height;
-	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
-	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
-	        board.addBubble(bubble);
-	      }
-	    }
-	  }, {
-	    key: 'tryAddPolychaete',
-	    value: function tryAddPolychaete() {
-	      var _this2 = this;
-	
-	      var board = this.board;
-	
-	      if (board.segments.length === 0) {
-	        (function () {
-	          _this2.startLength -= 1;
-	          if (_this2.startLength === 0) {
-	            _this2.startLength = _this2.initialStartLength;
-	          }
-	          if (_this2.level < 6 && _this2.startLength % 3 === 0) {
-	            _this2.level += 1;
-	            _this2.soundHandler.incrementBPM(10);
-	          }
-	          var velocityX = _segment.INITIAL_VELOCITY_X + _this2.level;
-	          board.addPolychaete(_this2.startLength, velocityX);
-	          if (_this2.startLength !== _this2.initialStartLength) {
-	            window.setTimeout(function () {
-	              board.addPolychaete(1, velocityX + 1);
-	            }, Math.random() * 1000 + 500);
-	          }
-	        })();
-	      }
-	    }
-	  }, {
-	    key: 'tryAddCrab',
-	    value: function tryAddCrab(e) {
-	      if (e.paused) return;
-	      var board = this.board;
-	      if (this.started && !board.crab && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
-	        var random = (0, _util.getRandomInt)(0, 8);
-	        if (random <= this.level) {
-	          board.addCrab({
-	            maximumVelocity: _crab.CRAB_MIN_VELOCITY + 2 * this.level
-	          });
-	          this.soundHandler.startCrabSequence();
-	        }
-	      }
-	    }
-	  }, {
-	    key: 'tryAddShrimp',
-	    value: function tryAddShrimp(e) {
-	      if (e.paused) return;
-	      var board = this.board;
-	      if (this.started && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === _sprite_sheets.FPS / 4) {
-	        var random = (0, _util.getRandomInt)(0, 8);
-	        if (random <= this.level) {
-	          board.addShrimp({
-	            velocityY: _shrimp.SHRIMP_MIN_VELOCITY + this.level
-	          });
-	          this.soundHandler.startShrimpOscillator(this.level);
-	        }
-	      }
-	    }
-	  }, {
-	    key: 'removeSeaSponges',
-	    value: function removeSeaSponges(idxsToRemove) {
-	      var _this3 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this3.board.removeSeaSpongeAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeSegments',
-	    value: function removeSegments(idxsToRemove) {
-	      var replace = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-	
-	      var board = this.board;
-	      var segmentsToReplace = [];
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        var segment = board.segments[idx];
-	        if (replace) {
-	          var sponge = new _sea_sponge2.default({
-	            x: segment.getX(),
-	            y: segment.getY()
-	          });
-	          board.addSeaSponge(sponge);
-	        }
-	        if (segment.next) {
-	          segmentsToReplace.push(segment.next);
-	        }
-	
-	        board.removeSegmentAtIdx(idx);
-	      });
-	
-	      if (segmentsToReplace.length > 0) {
-	        this.replaceSegmentsWithHeads(segmentsToReplace);
-	      }
-	    }
-	  }, {
-	    key: 'removeBubbles',
-	    value: function removeBubbles(idxsToRemove) {
-	      var _this4 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this4.board.removeBubbleAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeLaserBeams',
-	    value: function removeLaserBeams(idxsToRemove) {
-	      var _this5 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this5.board.removeLaserBeamAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeBombs',
-	    value: function removeBombs(idxsToRemove) {
-	      var _this6 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this6.board.removeBombAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeExplosions',
-	    value: function removeExplosions(idxsToRemove) {
-	      var _this7 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this7.board.removeExplosionAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeShrimp',
-	    value: function removeShrimp(idxsToRemove) {
-	      var _this8 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this8.board.removeShrimpAtIdx(idx);
-	      });
-	      if (this.board.shrimp.length === 0) {
-	        this.soundHandler.stopShrimpOscillator();
-	      }
-	    }
-	  }, {
-	    key: 'replaceSegmentsWithHeads',
-	    value: function replaceSegmentsWithHeads(segmentsToReplace) {
-	      var board = this.board;
-	      segmentsToReplace.forEach(function (segment) {
-	        var idx = board.segments.indexOf(segment);
-	        board.stage.removeChild(segment.sprite);
-	        var newHead = _head2.default.createHeadFromSegment(segment);
-	        segment.destroy();
-	        board.segments.splice(idx, 1);
-	        // need to add head segments to the start of the segment array
-	        // so their position gets updated before their trailing segments
-	        board.addSegmentToStart(newHead);
-	      });
-	    }
-	  }, {
-	    key: 'removeCrab',
-	    value: function removeCrab() {
-	      this.board.removeCrab();
-	      this.soundHandler.stopCrabSequence();
-	    }
-	  }, {
-	    key: 'removeScores',
-	    value: function removeScores(idxsToRemove) {
-	      var _this9 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this9.board.removeScoreAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'incrementScore',
-	    value: function incrementScore(addlScore) {
-	      this.currentScore += addlScore;
-	      this.uiHandler.updateCurrentScore(this.currentScore);
-	
-	      if (this.currentScore >= this.nextBombScore) {
-	        this.incrementBombCount();
-	        this.nextBombScore += NEXT_BOMB_INCREMENT;
-	      }
-	
-	      if (this.currentScore > this.highScore) {
-	        this.updateHighScore(this.currentScore);
-	      }
-	    }
-	  }, {
-	    key: 'updateHighScore',
-	    value: function updateHighScore(newHighScore) {
-	      this.highScore = newHighScore;
-	      this.uiHandler.updateHighScore(this.highScore);
-	      this.newHighScore = true;
-	    }
-	  }, {
-	    key: 'setPaused',
-	    value: function setPaused(paused) {
-	      this.paused = paused;
-	      _createjs2.default.Ticker.paused = paused;
-	      this.board.pauseAnimations(paused);
-	      this.soundHandler.pause(paused);
-	    }
-	  }, {
-	    key: 'endGame',
-	    value: function endGame() {
-	      var _this10 = this;
-	
-	      this.soundHandler.reset();
-	      this.setPaused(true);
-	      this.soundHandler.resetBPM();
-	      this.started = false;
-	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
-	      window.setTimeout(function () {
-	        return _this10.uiHandler.showGameOverPopup(_this10.newHighScore);
-	      }, 100);
-	    }
-	  }]);
-	
-	  return Game;
-	}();
-	
-	exports.default = Game;
-
-/***/ },
+/* 2 */,
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -744,7 +281,7 @@
 	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
 	  return new _createjs2.default.SpriteSheet({
 	    frames: {
-	      width: 4,
+	      width: 2,
 	      height: 16
 	    },
 	    images: ['./assets/laser_beam.png'],
@@ -1073,9 +610,13 @@
 	    KEYCODE_DOWN = 40,
 	    KEYCODE_S = 83,
 	    KEYCODE_SPACE = 32,
-	    KEYCODE_SHIFT = 16;
+	    KEYCODE_CMD_LEFT = 91,
+	    KEYCODE_CMD_RIGHT = 93,
+	    KEYCODE_CTRL = 17;
 	
-	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE, KEYCODE_SHIFT];
+	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE];
+	
+	var BOMB_KEYS = new Set([KEYCODE_CMD_LEFT, KEYCODE_CMD_RIGHT, KEYCODE_CTRL]);
 	
 	var DIAG_MOVE_AMOUNT = Math.sqrt(_diver.DIVER_MOVE_AMOUNT * _diver.DIVER_MOVE_AMOUNT / 2);
 	var ACCELERATION_START = 0.25;
@@ -1091,7 +632,6 @@
 	
 			this.handleKeyDown = this.handleKeyDown.bind(this);
 			this.handleKeyUp = this.handleKeyUp.bind(this);
-			this.handleTick = this.handleTick.bind(this);
 			this.acceleration = ACCELERATION_START;
 		}
 	
@@ -1110,7 +650,7 @@
 			value: function handleKeyDown(e) {
 				if (e.keyCode === KEYCODE_SPACE && !this.keysDown[e.keyCode]) {
 					this.game.fireLaser();
-				} else if (e.keyCode === KEYCODE_SHIFT && !this.keysDown[e.keyCode]) {
+				} else if (BOMB_KEYS.has(e.keyCode) && !this.keysDown[e.keyCode]) {
 					this.game.dropBomb();
 				}
 				if (controlKeys.includes(e.keyCode)) {
@@ -1308,7 +848,7 @@
 	    value: function fireLaser() {
 	      var laserBeam = new _laser_beam2.default({
 	        x: this.getCenterX() - _laser_beam.BEAM_WIDTH / 2,
-	        y: this.getY() - _laser_beam.BEAM_HEIGHT
+	        y: this.getY() - (_laser_beam.BEAM_HEIGHT + 2)
 	      });
 	      return laserBeam;
 	    }
@@ -1553,7 +1093,7 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
 	var VELOCITY_Y = -16;
-	var BEAM_WIDTH = exports.BEAM_WIDTH = 4;
+	var BEAM_WIDTH = exports.BEAM_WIDTH = 2;
 	var BEAM_HEIGHT = exports.BEAM_HEIGHT = 16;
 	
 	var LASER_BEAM_SHEET = (0, _sprite_sheets.createLaserBeamSpriteSheet)();
@@ -1797,439 +1337,8 @@
 	exports.default = Explosion;
 
 /***/ },
-/* 14 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var PositionHandler = function () {
-	  function PositionHandler(game) {
-	    _classCallCheck(this, PositionHandler);
-	
-	    this.game = game;
-	    this.board = game.board;
-	
-	    this.updatePositions = this.updatePositions.bind(this);
-	  }
-	
-	  _createClass(PositionHandler, [{
-	    key: "updatePositions",
-	    value: function updatePositions(e) {
-	      if (e.paused) return;
-	      this.updateBubblePositions();
-	      this.updateLaserBeamPositions();
-	      this.updateSegmentPositions();
-	      this.updateShrimpPositions();
-	      this.updateCrabPosition();
-	      this.updateScorePosition();
-	    }
-	  }, {
-	    key: "updateBubblePositions",
-	    value: function updateBubblePositions() {
-	      var bubbles = this.board.bubbles;
-	      var bubbleIdxsToRemove = [];
-	      bubbles.forEach(function (bubble, idx) {
-	        bubble.updatePosition();
-	        if (bubble.getY() <= -bubble.getHeight()) {
-	          bubbleIdxsToRemove.push(idx);
-	        }
-	      });
-	      this.game.removeBubbles(bubbleIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateLaserBeamPositions",
-	    value: function updateLaserBeamPositions() {
-	      var laserBeams = this.board.laserBeams;
-	      var laserIdxsToRemove = [];
-	      laserBeams.forEach(function (beam, idx) {
-	        beam.updatePosition();
-	        if (beam.getY() <= -beam.getHeight()) {
-	          laserIdxsToRemove.push(idx);
-	        }
-	      });
-	      this.game.removeLaserBeams(laserIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateSegmentPositions",
-	    value: function updateSegmentPositions() {
-	      var _this = this;
-	
-	      var segments = this.board.segments;
-	      segments.forEach(function (segment) {
-	        var collided = false;
-	        _this.board.sponges.forEach(function (sponge) {
-	          if (segment.overlaps(sponge)) {
-	            collided = true;
-	          }
-	        });
-	        segment.updatePosition(collided);
-	      });
-	    }
-	  }, {
-	    key: "updateShrimpPositions",
-	    value: function updateShrimpPositions() {
-	      var _this2 = this;
-	
-	      var shrimps = this.board.shrimp;
-	      var shrimpIdxsToRemove = [];
-	      shrimps.forEach(function (shrimp, idx) {
-	        shrimp.updatePosition();
-	        if (!shrimp.isPartiallyInMoveBounds()) {
-	          shrimpIdxsToRemove.push(idx);
-	        } else {
-	          if (Math.random() < .01) {
-	            var sponges = _this2.board.sponges;
-	            var segments = _this2.board.segments;
-	            var collided = false;
-	            sponges.forEach(function (sponge) {
-	              if (shrimp.overlaps(sponge)) collided = true;
-	            });
-	            if (!collided) {
-	              segments.forEach(function (segment) {
-	                if (shrimp.overlaps(segment)) collided = true;
-	              });
-	            }
-	            if (!collided && shrimp.moveBounds.maxY - shrimp.getY() > shrimp.getHeight()) {
-	              _this2.board.addSeaSponge(shrimp.dropSeaSponge());
-	            }
-	          }
-	        }
-	      });
-	      this.game.removeShrimp(shrimpIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateCrabPosition",
-	    value: function updateCrabPosition() {
-	      var crab = this.board.crab;
-	      if (crab) {
-	        crab.updatePosition();
-	        if (!crab.isPartiallyInMoveBounds()) this.game.removeCrab();
-	      }
-	    }
-	  }, {
-	    key: "updateScorePosition",
-	    value: function updateScorePosition() {
-	      var scores = this.board.scores;
-	      var scoreIdxsToRemove = [];
-	      scores.forEach(function (score, idx) {
-	        if (score.getAlpha() <= 0) scoreIdxsToRemove.push(idx);else score.updatePosition();
-	      });
-	      this.game.removeScores(scoreIdxsToRemove);
-	    }
-	  }]);
-	
-	  return PositionHandler;
-	}();
-	
-	exports.default = PositionHandler;
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _head = __webpack_require__(16);
-	
-	var _head2 = _interopRequireDefault(_head);
-	
-	var _score = __webpack_require__(18);
-	
-	var _score2 = _interopRequireDefault(_score);
-	
-	var _scores = __webpack_require__(20);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var CollisionHandler = function () {
-	  function CollisionHandler(game) {
-	    _classCallCheck(this, CollisionHandler);
-	
-	    this.game = game;
-	    this.board = game.board;
-	    this.soundHandler = game.soundHandler;
-	
-	    this.checkCollisions = this.checkCollisions.bind(this);
-	  }
-	
-	  _createClass(CollisionHandler, [{
-	    key: 'checkCollisions',
-	    value: function checkCollisions(e) {
-	      var game = this.game;
-	      if (e.paused) return;
-	      if (game.started) {
-	        this.checkExplosionCollisions();
-	        this.checkSegmentDiverCollisions();
-	        this.checkCrabCollisions();
-	        this.checkShrimpDiverCollisions();
-	      }
-	      if (game.started) {
-	        this.checkLaserBeamCollisions();
-	      }
-	      if (game.started) {
-	        game.tryAddPolychaete();
-	      }
-	    }
-	  }, {
-	    key: 'checkSegmentDiverCollisions',
-	    value: function checkSegmentDiverCollisions() {
-	      var _this = this;
-	
-	      this.board.segments.forEach(function (segment) {
-	        if (segment.overlaps(_this.board.diver)) {
-	          _this.game.endGame();
-	        }
-	      });
-	    }
-	  }, {
-	    key: 'checkCrabCollisions',
-	    value: function checkCrabCollisions() {
-	      var game = this.game;
-	      var crab = this.board.crab;
-	      var spongeIdxsToRemove = [];
-	
-	      if (crab) {
-	        if (crab.overlaps(this.board.diver)) {
-	          game.endGame();
-	        }
-	        this.board.sponges.forEach(function (sponge, spongeIdx) {
-	          if (crab.overlaps(sponge)) {
-	            spongeIdxsToRemove.push(spongeIdx);
-	          }
-	        });
-	        game.removeSeaSponges(spongeIdxsToRemove);
-	      }
-	    }
-	  }, {
-	    key: 'checkShrimpDiverCollisions',
-	    value: function checkShrimpDiverCollisions() {
-	      var _this2 = this;
-	
-	      this.board.shrimp.forEach(function (shrimp) {
-	        if (shrimp.overlaps(_this2.board.diver)) {
-	          _this2.game.endGame();
-	        }
-	      });
-	    }
-	  }, {
-	    key: 'checkLaserBeamCollisions',
-	    value: function checkLaserBeamCollisions() {
-	      var _this3 = this;
-	
-	      var game = this.game;
-	      var laserBeams = this.board.laserBeams;
-	      var beamIdxsToRemove = [];
-	      var spongeIdxsToRemove = [];
-	      var segmentIdxsToRemove = [];
-	      var shrimpIdxsToRemove = [];
-	
-	      laserBeams.forEach(function (beam, beamIdx) {
-	        // only allow a laser beam a single hit
-	        var hit = false;
-	
-	        var spongeIdx = _this3.checkLaserBeamSpongeCollisions(beam);
-	        if (spongeIdx !== false) {
-	          if (spongeIdx !== true) {
-	            spongeIdxsToRemove.push(spongeIdx);
-	          }
-	          beamIdxsToRemove.push(beamIdx);
-	          hit = true;
-	        }
-	
-	        if (!hit) {
-	          var segmentIdx = _this3.checkLaserBeamSegmentCollisions(beam);
-	          if (segmentIdx !== false) {
-	            segmentIdxsToRemove.push(segmentIdx);
-	            beamIdxsToRemove.push(beamIdx);
-	            hit = true;
-	          }
-	        }
-	
-	        if (!hit) {
-	          var crabHit = _this3.checkLaserBeamCrabCollisions(beam);
-	          if (crabHit) {
-	            game.removeCrab();
-	            beamIdxsToRemove.push(beamIdx);
-	            hit = true;
-	          }
-	        }
-	
-	        if (!hit) {
-	          var shrimpIdx = _this3.checkLaserBeamShrimpCollisions(beam);
-	          if (shrimpIdx !== false) {
-	            shrimpIdxsToRemove.push(shrimpIdx);
-	            beamIdxsToRemove.push(beamIdx);
-	            hit = true;
-	          }
-	        }
-	      });
-	
-	      game.removeLaserBeams(beamIdxsToRemove);
-	      game.removeSeaSponges(spongeIdxsToRemove);
-	      game.removeSegments(segmentIdxsToRemove);
-	      game.removeShrimp(shrimpIdxsToRemove);
-	    }
-	  }, {
-	    key: 'checkLaserBeamSpongeCollisions',
-	    value: function checkLaserBeamSpongeCollisions(beam) {
-	      var sponges = this.board.sponges;
-	      for (var i = 0; i < sponges.length; i++) {
-	        if (beam.overlaps(sponges[i])) {
-	          sponges[i].handleHit();
-	          if (sponges[i].hits <= 0) {
-	            this.game.incrementScore(_scores.SPONGE_HIT_SCORE);
-	            this.board.addScore(_score2.default.createScoreAboveObject(sponges[i], _scores.SPONGE_HIT_SCORE));
-	            this.soundHandler.playSeaSpongeDestroy();
-	            return i;
-	          } else {
-	            this.soundHandler.playSeaSpongeHit();
-	            return true;
-	          }
-	        }
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkLaserBeamSegmentCollisions',
-	    value: function checkLaserBeamSegmentCollisions(beam) {
-	      var game = this.game;
-	      var segments = this.board.segments;
-	      for (var i = 0; i < segments.length; i++) {
-	        if (beam.overlaps(segments[i])) {
-	          var score = _scores.SEGMENT_HIT_SCORE;
-	          if (segments[i] instanceof _head2.default) {
-	            score = _scores.HEAD_HIT_SCORE;
-	          }
-	          game.incrementScore(score);
-	          this.board.addScore(_score2.default.createScoreAboveObject(segments[i], score));
-	          this.soundHandler.playSegmentHit();
-	          return i;
-	        }
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkLaserBeamCrabCollisions',
-	    value: function checkLaserBeamCrabCollisions(beam) {
-	      var game = this.game;
-	      var crab = this.board.crab;
-	      if (crab && beam.overlaps(crab)) {
-	        var score = _scores.CRAB_HIT_SCORE_FAR;
-	        if (crab.getY() <= 500 && crab.getY() > 400) {
-	          score = _scores.CRAB_HIT_SCORE_MIDDLE;
-	        } else if (crab.getY() > 500) {
-	          score = _scores.CRAB_HIT_SCORE_CLOSE;
-	        }
-	        game.incrementScore(score);
-	        this.board.addScore(_score2.default.createScoreAboveObject(crab, score));
-	        this.soundHandler.playCrabHit();
-	        return true;
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkLaserBeamShrimpCollisions',
-	    value: function checkLaserBeamShrimpCollisions(beam) {
-	      var shrimp = this.board.shrimp;
-	      for (var i = 0; i < shrimp.length; i++) {
-	        if (beam.overlaps(shrimp[i])) {
-	          this.game.incrementScore(_scores.SHRIMP_HIT_SCORE);
-	          this.board.addScore(_score2.default.createScoreAboveObject(shrimp[i], _scores.SHRIMP_HIT_SCORE));
-	          this.soundHandler.playShrimpHit();
-	          return i;
-	        }
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkExplosionCollisions',
-	    value: function checkExplosionCollisions() {
-	      var _this4 = this;
-	
-	      var game = this.game;
-	      var explosions = this.board.explosions;
-	      var sponges = this.board.sponges;
-	      var segments = this.board.segments;
-	      var shrimps = this.board.shrimp;
-	      var crab = this.board.crab;
-	      var spongeIdxsToRemove = [];
-	      var segmentIdxsToRemove = [];
-	      var shrimpIdxsToRemove = [];
-	
-	      explosions.forEach(function (explosion) {
-	        if (explosion.overlaps(_this4.board.diver)) {
-	          game.endGame();
-	        }
-	
-	        if (game.started) {
-	          (function () {
-	            var score = void 0;
-	
-	            if (crab) {
-	              if (explosion.overlaps(crab)) {
-	                score = _scores.CRAB_HIT_SCORE_CLOSE / 2;
-	                _this4.board.addScore(_score2.default.createScoreAboveObject(crab, score));
-	                game.incrementScore(score);
-	                game.removeCrab();
-	              }
-	            }
-	            sponges.forEach(function (sponge, idx) {
-	              if (explosion.overlaps(sponge)) {
-	                spongeIdxsToRemove.push(idx);
-	              }
-	            });
-	            segments.forEach(function (segment, idx) {
-	              if (explosion.overlaps(segment)) {
-	                segmentIdxsToRemove.push(idx);
-	                if (segment instanceof _head2.default) {
-	                  score = _scores.HEAD_HIT_SCORE / 2;
-	                } else {
-	                  score = _scores.SEGMENT_HIT_SCORE / 2;
-	                }
-	                _this4.board.addScore(_score2.default.createScoreAboveObject(segment, score));
-	                game.incrementScore(score);
-	              }
-	            });
-	            shrimps.forEach(function (shrimp, idx) {
-	              if (explosion.overlaps(shrimp)) {
-	                shrimpIdxsToRemove.push(idx);
-	                score = _scores.SHRIMP_HIT_SCORE / 2;
-	                _this4.board.addScore(_score2.default.createScoreAboveObject(shrimp, score));
-	                game.incrementScore(score);
-	              }
-	            });
-	          })();
-	        }
-	      });
-	
-	      game.removeSeaSponges(spongeIdxsToRemove);
-	      game.removeSegments(segmentIdxsToRemove, false);
-	      game.removeShrimp(shrimpIdxsToRemove);
-	    }
-	  }]);
-	
-	  return CollisionHandler;
-	}();
-	
-	exports.default = CollisionHandler;
-
-/***/ },
+/* 14 */,
+/* 15 */,
 /* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -2374,17 +1483,17 @@
 	
 	      switch (this.direction) {
 	        case _moving_object.RIGHT:
-	          if (this.moveBounds.maxX - this.getMaxX() > this.velocityX && !collided) {
-	            this.moveRight();
-	          } else {
+	          if (collided || this.moveBounds.maxX - this.getMaxX() < this.velocityX || this.prev && this.prev.direction === _moving_object.LEFT && this.prev.getX() < this.getX() - this.getWidth() / 2) {
 	            this.moveVerticalFromRight();
+	          } else {
+	            this.moveRight();
 	          }
 	          break;
 	        case _moving_object.LEFT:
-	          if (this.getX() - this.moveBounds.minX > this.velocityX && !collided) {
-	            this.moveLeft();
-	          } else {
+	          if (collided || this.getX() - this.moveBounds.minX < this.velocityX || this.prev && this.prev.direction === _moving_object.RIGHT && this.prev.getX() > this.getX() + this.getWidth() / 2) {
 	            this.moveVerticalFromLeft();
+	          } else {
+	            this.moveLeft();
 	          }
 	          break;
 	        case VERTICAL_FROM_RIGHT:
@@ -2419,10 +1528,10 @@
 	      var vertChange = void 0;
 	      if (this.verticalDirection === _moving_object.DOWN) {
 	        vertChange = VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveDown');
+	        this.sprite.gotoAndStop('moveDown');
 	      } else {
 	        vertChange = -VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveUp');
+	        this.sprite.gotoAndStop('moveUp');
 	      }
 	      this.changeX(this.velocityX);
 	      this.changeY(vertChange);
@@ -2434,10 +1543,10 @@
 	      var vertChange = void 0;
 	      if (this.verticalDirection === _moving_object.DOWN) {
 	        vertChange = VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveDown');
+	        this.sprite.gotoAndStop('moveDown');
 	      } else {
 	        vertChange = -VELOCITY_Y;
-	        this.sprite.gotoAndPlay('moveUp');
+	        this.sprite.gotoAndStop('moveUp');
 	      }
 	      this.changeX(-this.velocityX);
 	      this.changeY(vertChange);
@@ -2486,6 +1595,15 @@
 	        oldNext.prev = segment;
 	        segment.next = oldNext;
 	      }
+	    }
+	  }, {
+	    key: 'overlapsSegment',
+	    value: function overlapsSegment(segment) {
+	      var hDirs = new Set([_moving_object.LEFT, _moving_object.RIGHT]);
+	      if (!hDirs.has(this.direction) || !hDirs.has(segment.direction)) {
+	        return false;
+	      }
+	      return _moving_object2.default.prototype.overlaps.call(this, segment);
 	    }
 	  }, {
 	    key: 'destroy',
@@ -2781,23 +1899,7 @@
 	};
 
 /***/ },
-/* 20 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
-	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
-	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
-	var CRAB_HIT_SCORE_CLOSE = exports.CRAB_HIT_SCORE_CLOSE = 300;
-	var CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_MIDDLE = 600;
-	var CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_FAR = 900;
-	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
-
-/***/ },
+/* 20 */,
 /* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -2822,6 +1924,7 @@
 	    _classCallCheck(this, SoundHandler);
 	
 	    var shrimpOscillatorPlaying = false;
+	    var crabSequencePlaying = false;
 	
 	    this.createSynth();
 	    this.createLaserSynth();
@@ -3022,11 +2125,13 @@
 	    key: 'startCrabSequence',
 	    value: function startCrabSequence() {
 	      this.crabSequence.start();
+	      this.crabSequencePlaying = true;
 	    }
 	  }, {
 	    key: 'stopCrabSequence',
 	    value: function stopCrabSequence() {
 	      this.crabSequence.stop();
+	      this.crabSequencePlaying = false;
 	    }
 	  }, {
 	    key: 'startShrimpOscillator',
@@ -25299,12 +24404,21 @@
 	      this.sponges.splice(idx, 1);
 	    }
 	  }, {
-	    key: 'removeAllSeaSponges',
-	    value: function removeAllSeaSponges() {
+	    key: 'removeSeaSponges',
+	    value: function removeSeaSponges(idxsToRemove) {
 	      var _this2 = this;
 	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this2.removeSeaSpongeAtIdx(idx);
+	      });
+	    }
+	  }, {
+	    key: 'removeAllSeaSponges',
+	    value: function removeAllSeaSponges() {
+	      var _this3 = this;
+	
 	      this.sponges.forEach(function (sponge) {
-	        _this2.stage.removeChild(sponge.sprite);
+	        _this3.stage.removeChild(sponge.sprite);
 	        sponge.destroy();
 	      });
 	      this.sponges = [];
@@ -25318,12 +24432,56 @@
 	      this.segments.splice(idx, 1);
 	    }
 	  }, {
+	    key: 'removeSegments',
+	    value: function removeSegments(idxsToRemove) {
+	      var _this4 = this;
+	
+	      var replace = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+	
+	      var segmentsToReplace = [];
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        var segment = _this4.segments[idx];
+	        if (replace) {
+	          var sponge = new _sea_sponge2.default({
+	            x: segment.getX(),
+	            y: segment.getY()
+	          });
+	          _this4.addSeaSponge(sponge);
+	        }
+	        if (segment.next) {
+	          segmentsToReplace.push(segment.next);
+	        }
+	
+	        _this4.removeSegmentAtIdx(idx);
+	      });
+	
+	      if (segmentsToReplace.length > 0) {
+	        this.replaceSegmentsWithHeads(segmentsToReplace);
+	      }
+	    }
+	  }, {
+	    key: 'replaceSegmentsWithHeads',
+	    value: function replaceSegmentsWithHeads(segmentsToReplace) {
+	      var _this5 = this;
+	
+	      segmentsToReplace.forEach(function (segment) {
+	        var idx = _this5.segments.indexOf(segment);
+	        _this5.stage.removeChild(segment.sprite);
+	        var newHead = _head2.default.createHeadFromSegment(segment);
+	        segment.destroy();
+	        _this5.segments.splice(idx, 1);
+	        // need to add head segments to the start of the segment array
+	        // so their position gets updated before their trailing segments
+	        _this5.addSegmentToStart(newHead);
+	      });
+	    }
+	  }, {
 	    key: 'removeAllSegments',
 	    value: function removeAllSegments() {
-	      var _this3 = this;
+	      var _this6 = this;
 	
 	      this.segments.forEach(function (segment) {
-	        _this3.stage.removeChild(segment.sprite);
+	        _this6.stage.removeChild(segment.sprite);
 	        segment.destroy();
 	      });
 	      this.segments = [];
@@ -25337,12 +24495,21 @@
 	      this.shrimp.splice(idx, 1);
 	    }
 	  }, {
+	    key: 'removeShrimp',
+	    value: function removeShrimp(idxsToRemove) {
+	      var _this7 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this7.removeShrimpAtIdx(idx);
+	      });
+	    }
+	  }, {
 	    key: 'removeAllShrimp',
 	    value: function removeAllShrimp() {
-	      var _this4 = this;
+	      var _this8 = this;
 	
 	      this.shrimp.forEach(function (shrimp) {
-	        _this4.stage.removeChild(shrimp.sprite);
+	        _this8.stage.removeChild(shrimp.sprite);
 	        shrimp.destroy();
 	      });
 	      this.shrimp = [];
@@ -25365,6 +24532,15 @@
 	      this.bubbles.splice(idx, 1);
 	    }
 	  }, {
+	    key: 'removeBubbles',
+	    value: function removeBubbles(idxsToRemove) {
+	      var _this9 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this9.removeBubbleAtIdx(idx);
+	      });
+	    }
+	  }, {
 	    key: 'removeLaserBeamAtIdx',
 	    value: function removeLaserBeamAtIdx(idx) {
 	      var laserBeam = this.laserBeams[idx];
@@ -25373,12 +24549,21 @@
 	      this.laserBeams.splice(idx, 1);
 	    }
 	  }, {
+	    key: 'removeLaserBeams',
+	    value: function removeLaserBeams(idxsToRemove) {
+	      var _this10 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this10.removeLaserBeamAtIdx(idx);
+	      });
+	    }
+	  }, {
 	    key: 'removeAllLaserBeams',
 	    value: function removeAllLaserBeams() {
-	      var _this5 = this;
+	      var _this11 = this;
 	
 	      this.laserBeams.forEach(function (beam) {
-	        _this5.stage.removeChild(beam.sprite);
+	        _this11.stage.removeChild(beam.sprite);
 	        beam.destroy();
 	      });
 	      this.laserBeams = [];
@@ -25392,12 +24577,21 @@
 	      this.bombs.splice(idx, 1);
 	    }
 	  }, {
+	    key: 'removeBombs',
+	    value: function removeBombs(idxsToRemove) {
+	      var _this12 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this12.removeBombAtIdx(idx);
+	      });
+	    }
+	  }, {
 	    key: 'removeAllBombs',
 	    value: function removeAllBombs() {
-	      var _this6 = this;
+	      var _this13 = this;
 	
 	      this.bombs.forEach(function (bomb) {
-	        _this6.stage.removeChild(bomb.sprite);
+	        _this13.stage.removeChild(bomb.sprite);
 	        bomb.destroy();
 	      });
 	      this.bombs = [];
@@ -25411,12 +24605,21 @@
 	      this.explosions.splice(idx, 1);
 	    }
 	  }, {
+	    key: 'removeExplosions',
+	    value: function removeExplosions(idxsToRemove) {
+	      var _this14 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this14.removeExplosionAtIdx(idx);
+	      });
+	    }
+	  }, {
 	    key: 'removeAllExplosions',
 	    value: function removeAllExplosions() {
-	      var _this7 = this;
+	      var _this15 = this;
 	
 	      this.explosions.forEach(function (explosion) {
-	        _this7.stage.removeChild(explosion.sprite);
+	        _this15.stage.removeChild(explosion.sprite);
 	        explosion.destroy();
 	      });
 	      this.explosions = [];
@@ -25430,12 +24633,21 @@
 	      this.scores.splice(idx, 1);
 	    }
 	  }, {
+	    key: 'removeScores',
+	    value: function removeScores(idxsToRemove) {
+	      var _this16 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this16.removeScoreAtIdx(idx);
+	      });
+	    }
+	  }, {
 	    key: 'removeAllScores',
 	    value: function removeAllScores() {
-	      var _this8 = this;
+	      var _this17 = this;
 	
 	      this.scores.forEach(function (score) {
-	        _this8.stage.removeChild(score.sprite);
+	        _this17.stage.removeChild(score.sprite);
 	        score.destroy();
 	      });
 	      this.scores = [];
@@ -25814,6 +25026,820 @@
 	}(_moving_object2.default);
 	
 	exports.default = Shrimp;
+
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _jsCookie = __webpack_require__(3);
+	
+	var _jsCookie2 = _interopRequireDefault(_jsCookie);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _util = __webpack_require__(5);
+	
+	var _position_handler = __webpack_require__(29);
+	
+	var _position_handler2 = _interopRequireDefault(_position_handler);
+	
+	var _collision_handler = __webpack_require__(30);
+	
+	var _collision_handler2 = _interopRequireDefault(_collision_handler);
+	
+	var _board = __webpack_require__(23);
+	
+	var _board2 = _interopRequireDefault(_board);
+	
+	var _ui_handler = __webpack_require__(6);
+	
+	var _ui_handler2 = _interopRequireDefault(_ui_handler);
+	
+	var _key_handler = __webpack_require__(7);
+	
+	var _key_handler2 = _interopRequireDefault(_key_handler);
+	
+	var _sound_handler = __webpack_require__(21);
+	
+	var _sound_handler2 = _interopRequireDefault(_sound_handler);
+	
+	var _bubble = __webpack_require__(24);
+	
+	var _bubble2 = _interopRequireDefault(_bubble);
+	
+	var _head = __webpack_require__(16);
+	
+	var _head2 = _interopRequireDefault(_head);
+	
+	var _segment = __webpack_require__(17);
+	
+	var _sea_sponge = __webpack_require__(25);
+	
+	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	var _crab = __webpack_require__(26);
+	
+	var _shrimp = __webpack_require__(27);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var HIGH_SCORE_COOKIE = 'polychaete-high-score';
+	var INITIAL_BOMB_COUNT = 1;
+	var MAX_BOMB_COUNT = 3;
+	var NEXT_BOMB_INCREMENT = 2500;
+	
+	var Game = function () {
+	  function Game(options) {
+	    _classCallCheck(this, Game);
+	
+	    this.stage = options.stage;
+	    this.board = new _board2.default(options);
+	    this.uiHandler = new _ui_handler2.default(this);
+	    this.keyHandler = new _key_handler2.default(this);
+	    this.soundHandler = new _sound_handler2.default();
+	    this.positionHandler = new _position_handler2.default(this);
+	    this.collisionHandler = new _collision_handler2.default(this);
+	    this.initialStartLength = options.initialStartLength || 12;
+	    this.started = false;
+	
+	    var cookieHighScore = _jsCookie2.default.get(HIGH_SCORE_COOKIE);
+	    this.updateHighScore(cookieHighScore ? parseInt(cookieHighScore) : 0);
+	
+	    this.keyHandler.attachListeners();
+	    this.board.addBubbles(20);
+	
+	    this.tick = this.tick.bind(this);
+	  }
+	
+	  _createClass(Game, [{
+	    key: 'initialize',
+	    value: function initialize(startGame) {
+	      this.startLength = this.initialStartLength;
+	      this.level = 0;
+	      this.currentScore = 0;
+	      this.newHighScore = false;
+	      this.uiHandler.updateCurrentScore(this.currentScore);
+	      this.bombCount = INITIAL_BOMB_COUNT;
+	      this.nextBombScore = NEXT_BOMB_INCREMENT;
+	      this.uiHandler.updateBombCount(this.bombCount);
+	
+	      var board = this.board;
+	      board.reset();
+	      if (startGame) {
+	        board.addDiver();
+	        this.started = true;
+	        this.soundHandler.pause(false);
+	      }
+	      board.addSeaSponges(30);
+	      board.addPolychaete(this.startLength, _segment.INITIAL_VELOCITY_X);
+	
+	      this.paused = false;
+	      _createjs2.default.Ticker.paused = false;
+	    }
+	  }, {
+	    key: 'run',
+	    value: function run() {
+	      _createjs2.default.Ticker.setFPS(_sprite_sheets.FPS);
+	      _createjs2.default.Ticker.on("tick", this.stage);
+	      _createjs2.default.Ticker.on("tick", this.tick);
+	    }
+	  }, {
+	    key: 'tick',
+	    value: function tick(e) {
+	      this.keyHandler.handleTick(e);
+	      this.collisionHandler.checkCollisions(e);
+	      this.positionHandler.updatePositions(e);
+	      this.playSegmentStep(e);
+	      this.tickBombs(e);
+	      this.tickExplosions(e);
+	      this.tryAddBubble(e);
+	      this.tryAddCrab(e);
+	      this.tryAddShrimp(e);
+	      this.checkSounds();
+	    }
+	  }, {
+	    key: 'moveDiver',
+	    value: function moveDiver(xDiff, yDiff) {
+	      if (!this.started || this.paused) return;
+	
+	      var board = this.board;
+	      var diver = board.diver;
+	      var blocked = false;
+	      diver.changeBoundedPos(xDiff, yDiff);
+	      board.sponges.forEach(function (sponge) {
+	        if (sponge.overlaps(diver)) {
+	          blocked = true;
+	        }
+	      });
+	      if (blocked) diver.changeBoundedPos(-xDiff, -yDiff);
+	    }
+	  }, {
+	    key: 'fireLaser',
+	    value: function fireLaser() {
+	      if (!this.started || this.paused) return;
+	      this.board.fireLaser();
+	      this.soundHandler.playLaserSound();
+	    }
+	  }, {
+	    key: 'incrementBombCount',
+	    value: function incrementBombCount() {
+	      if (this.bombCount < MAX_BOMB_COUNT) {
+	        this.uiHandler.updateBombCount(++this.bombCount);
+	        this.soundHandler.playBombIncrement();
+	      }
+	    }
+	  }, {
+	    key: 'dropBomb',
+	    value: function dropBomb() {
+	      if (!this.started || this.paused) return;
+	      if (this.bombCount > 0) {
+	        this.board.dropBomb();
+	        this.uiHandler.updateBombCount(--this.bombCount);
+	      }
+	    }
+	  }, {
+	    key: 'playSegmentStep',
+	    value: function playSegmentStep(e) {
+	      if (e.paused) return;
+	      var segments = this.board.segments;
+	      if (segments.length > 0 && this.started) {
+	        var maxVelocity = segments.reduce(function (a, b) {
+	          return a.velocityX > b.velocityX ? a.velocityX : b.velocityX;
+	        }, this);
+	        if (_createjs2.default.Ticker.getTicks() % Math.round(32 / maxVelocity) === 0) {
+	          this.soundHandler.playSegmentStep();
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'tickBombs',
+	    value: function tickBombs(e) {
+	      var _this = this;
+	
+	      if (e.paused) return;
+	      var bombIdxsToRemove = [];
+	      this.board.bombs.forEach(function (bomb, idx) {
+	        bomb.tickDown();
+	        if (bomb.ticks === 0) {
+	          _this.board.addExplosion(bomb.explode());
+	          bombIdxsToRemove.push(idx);
+	          _this.soundHandler.playExplosionNoise();
+	        }
+	      });
+	
+	      this.board.removeBombs(bombIdxsToRemove);
+	    }
+	  }, {
+	    key: 'tickExplosions',
+	    value: function tickExplosions(e) {
+	      if (e.paused) return;
+	      var explosionIdxsToRemove = [];
+	      this.board.explosions.forEach(function (explosion, idx) {
+	        explosion.tickDown();
+	        if (explosion.ticks === 0) {
+	          explosionIdxsToRemove.push(idx);
+	        }
+	      });
+	
+	      this.board.removeExplosions(explosionIdxsToRemove);
+	    }
+	  }, {
+	    key: 'tryAddBubble',
+	    value: function tryAddBubble(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (_createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
+	        var x = this.stage.canvas.width * Math.random();
+	        var y = this.stage.canvas.height;
+	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
+	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
+	        board.addBubble(bubble);
+	      }
+	    }
+	  }, {
+	    key: 'tryAddPolychaete',
+	    value: function tryAddPolychaete() {
+	      var _this2 = this;
+	
+	      var board = this.board;
+	
+	      if (board.segments.length === 0) {
+	        (function () {
+	          _this2.startLength -= 1;
+	          if (_this2.startLength === 0) {
+	            _this2.startLength = _this2.initialStartLength;
+	          }
+	          if (_this2.level < 6 && _this2.startLength % 3 === 0) {
+	            _this2.level += 1;
+	            _this2.soundHandler.incrementBPM(10);
+	          }
+	          var velocityX = _segment.INITIAL_VELOCITY_X + _this2.level;
+	          board.addPolychaete(_this2.startLength, velocityX);
+	          if (_this2.startLength !== _this2.initialStartLength) {
+	            window.setTimeout(function () {
+	              board.addPolychaete(1, velocityX + 1);
+	            }, Math.random() * 1000 + 500);
+	          }
+	        })();
+	      }
+	    }
+	  }, {
+	    key: 'tryAddCrab',
+	    value: function tryAddCrab(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (this.started && !board.crab && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
+	        var random = (0, _util.getRandomInt)(0, 8);
+	        if (random <= this.level) {
+	          board.addCrab({
+	            maximumVelocity: _crab.CRAB_MIN_VELOCITY + 2 * this.level
+	          });
+	          this.soundHandler.startCrabSequence();
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'tryAddShrimp',
+	    value: function tryAddShrimp(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (this.started && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === _sprite_sheets.FPS / 4) {
+	        var random = (0, _util.getRandomInt)(0, 8);
+	        if (random <= this.level) {
+	          board.addShrimp({
+	            velocityY: _shrimp.SHRIMP_MIN_VELOCITY + this.level
+	          });
+	          this.soundHandler.startShrimpOscillator(this.level);
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'checkSounds',
+	    value: function checkSounds() {
+	      if (this.soundHandler.shrimpOscillatorPlaying && this.board.shrimp.length === 0) {
+	        this.soundHandler.stopShrimpOscillator();
+	      }
+	      if (this.soundHandler.crabSequencePlaying && !this.board.crab) {
+	        this.soundHandler.stopCrabSequence();
+	      }
+	    }
+	  }, {
+	    key: 'incrementScore',
+	    value: function incrementScore(addlScore) {
+	      this.currentScore += addlScore;
+	      this.uiHandler.updateCurrentScore(this.currentScore);
+	
+	      if (this.currentScore >= this.nextBombScore) {
+	        this.incrementBombCount();
+	        this.nextBombScore += NEXT_BOMB_INCREMENT;
+	      }
+	
+	      if (this.currentScore > this.highScore) {
+	        this.updateHighScore(this.currentScore);
+	      }
+	    }
+	  }, {
+	    key: 'updateHighScore',
+	    value: function updateHighScore(newHighScore) {
+	      this.highScore = newHighScore;
+	      this.uiHandler.updateHighScore(this.highScore);
+	      this.newHighScore = true;
+	    }
+	  }, {
+	    key: 'setPaused',
+	    value: function setPaused(paused) {
+	      this.paused = paused;
+	      _createjs2.default.Ticker.paused = paused;
+	      this.board.pauseAnimations(paused);
+	      this.soundHandler.pause(paused);
+	    }
+	  }, {
+	    key: 'endGame',
+	    value: function endGame() {
+	      var _this3 = this;
+	
+	      this.soundHandler.reset();
+	      this.setPaused(true);
+	      this.soundHandler.resetBPM();
+	      this.started = false;
+	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
+	      window.setTimeout(function () {
+	        return _this3.uiHandler.showGameOverPopup(_this3.newHighScore);
+	      }, 100);
+	    }
+	  }]);
+	
+	  return Game;
+	}();
+	
+	exports.default = Game;
+
+/***/ },
+/* 29 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var PositionHandler = function () {
+	  function PositionHandler(game) {
+	    _classCallCheck(this, PositionHandler);
+	
+	    this.game = game;
+	    this.board = game.board;
+	  }
+	
+	  _createClass(PositionHandler, [{
+	    key: "updatePositions",
+	    value: function updatePositions(e) {
+	      if (e.paused) return;
+	      this.updateBubblePositions();
+	      this.updateLaserBeamPositions();
+	      this.updateSegmentPositions();
+	      this.updateShrimpPositions();
+	      this.updateCrabPosition();
+	      this.updateScorePosition();
+	    }
+	  }, {
+	    key: "updateBubblePositions",
+	    value: function updateBubblePositions() {
+	      var bubbles = this.board.bubbles;
+	      var bubbleIdxsToRemove = [];
+	      bubbles.forEach(function (bubble, idx) {
+	        bubble.updatePosition();
+	        if (bubble.getY() <= -bubble.getHeight()) {
+	          bubbleIdxsToRemove.push(idx);
+	        }
+	      });
+	      this.board.removeBubbles(bubbleIdxsToRemove);
+	    }
+	  }, {
+	    key: "updateLaserBeamPositions",
+	    value: function updateLaserBeamPositions() {
+	      var laserBeams = this.board.laserBeams;
+	      var laserIdxsToRemove = [];
+	      laserBeams.forEach(function (beam, idx) {
+	        beam.updatePosition();
+	        if (beam.getY() <= -beam.getHeight()) {
+	          laserIdxsToRemove.push(idx);
+	        }
+	      });
+	      this.board.removeLaserBeams(laserIdxsToRemove);
+	    }
+	  }, {
+	    key: "updateSegmentPositions",
+	    value: function updateSegmentPositions() {
+	      var _this = this;
+	
+	      var segments = this.board.segments;
+	      segments.forEach(function (segment) {
+	        var collided = false;
+	        segments.forEach(function (segment2) {
+	          if (segment !== segment2) {
+	            if (segment.overlapsSegment(segment2)) collided = true;
+	          }
+	        });
+	        if (!collided) {
+	          _this.board.sponges.forEach(function (sponge) {
+	            if (segment.overlaps(sponge)) collided = true;
+	          });
+	        }
+	        segment.updatePosition(collided);
+	      });
+	    }
+	  }, {
+	    key: "updateShrimpPositions",
+	    value: function updateShrimpPositions() {
+	      var _this2 = this;
+	
+	      var shrimps = this.board.shrimp;
+	      var shrimpIdxsToRemove = [];
+	      shrimps.forEach(function (shrimp, idx) {
+	        shrimp.updatePosition();
+	        if (!shrimp.isPartiallyInMoveBounds()) {
+	          shrimpIdxsToRemove.push(idx);
+	        } else {
+	          if (Math.random() < .01) {
+	            var sponges = _this2.board.sponges;
+	            var segments = _this2.board.segments;
+	            var collided = false;
+	            sponges.forEach(function (sponge) {
+	              if (shrimp.overlaps(sponge)) collided = true;
+	            });
+	            if (!collided) {
+	              segments.forEach(function (segment) {
+	                if (shrimp.overlaps(segment)) collided = true;
+	              });
+	            }
+	            if (!collided && shrimp.moveBounds.maxY - shrimp.getY() > shrimp.getHeight()) {
+	              _this2.board.addSeaSponge(shrimp.dropSeaSponge());
+	            }
+	          }
+	        }
+	      });
+	      this.board.removeShrimp(shrimpIdxsToRemove);
+	    }
+	  }, {
+	    key: "updateCrabPosition",
+	    value: function updateCrabPosition() {
+	      var crab = this.board.crab;
+	      if (crab) {
+	        crab.updatePosition();
+	        if (!crab.isPartiallyInMoveBounds()) this.board.removeCrab();
+	      }
+	    }
+	  }, {
+	    key: "updateScorePosition",
+	    value: function updateScorePosition() {
+	      var scores = this.board.scores;
+	      var scoreIdxsToRemove = [];
+	      scores.forEach(function (score, idx) {
+	        if (score.getAlpha() <= 0) scoreIdxsToRemove.push(idx);else score.updatePosition();
+	      });
+	      this.board.removeScores(scoreIdxsToRemove);
+	    }
+	  }]);
+	
+	  return PositionHandler;
+	}();
+	
+	exports.default = PositionHandler;
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _head = __webpack_require__(16);
+	
+	var _head2 = _interopRequireDefault(_head);
+	
+	var _score = __webpack_require__(18);
+	
+	var _score2 = _interopRequireDefault(_score);
+	
+	var _scores = __webpack_require__(31);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var CollisionHandler = function () {
+	  function CollisionHandler(game) {
+	    _classCallCheck(this, CollisionHandler);
+	
+	    this.game = game;
+	    this.board = game.board;
+	    this.soundHandler = game.soundHandler;
+	  }
+	
+	  _createClass(CollisionHandler, [{
+	    key: 'checkCollisions',
+	    value: function checkCollisions(e) {
+	      var game = this.game;
+	      if (e.paused) return;
+	      if (game.started) {
+	        this.checkExplosionCollisions();
+	        this.checkSegmentDiverCollisions();
+	        this.checkCrabCollisions();
+	        this.checkShrimpDiverCollisions();
+	      }
+	      if (game.started) {
+	        this.checkLaserBeamCollisions();
+	      }
+	      if (game.started) {
+	        game.tryAddPolychaete();
+	      }
+	    }
+	  }, {
+	    key: 'checkSegmentDiverCollisions',
+	    value: function checkSegmentDiverCollisions() {
+	      var _this = this;
+	
+	      this.board.segments.forEach(function (segment) {
+	        if (segment.overlaps(_this.board.diver)) {
+	          _this.game.endGame();
+	        }
+	      });
+	    }
+	  }, {
+	    key: 'checkCrabCollisions',
+	    value: function checkCrabCollisions() {
+	      var game = this.game;
+	      var crab = this.board.crab;
+	      var spongeIdxsToRemove = [];
+	
+	      if (crab) {
+	        if (crab.overlaps(this.board.diver)) {
+	          game.endGame();
+	        }
+	        this.board.sponges.forEach(function (sponge, spongeIdx) {
+	          if (crab.overlaps(sponge)) {
+	            spongeIdxsToRemove.push(spongeIdx);
+	          }
+	        });
+	        this.board.removeSeaSponges(spongeIdxsToRemove);
+	      }
+	    }
+	  }, {
+	    key: 'checkShrimpDiverCollisions',
+	    value: function checkShrimpDiverCollisions() {
+	      var _this2 = this;
+	
+	      this.board.shrimp.forEach(function (shrimp) {
+	        if (shrimp.overlaps(_this2.board.diver)) {
+	          _this2.game.endGame();
+	        }
+	      });
+	    }
+	  }, {
+	    key: 'checkLaserBeamCollisions',
+	    value: function checkLaserBeamCollisions() {
+	      var _this3 = this;
+	
+	      var game = this.game;
+	      var board = this.board;
+	      var laserBeams = this.board.laserBeams;
+	      var beamIdxsToRemove = [];
+	      var spongeIdxsToRemove = [];
+	      var segmentIdxsToRemove = [];
+	      var shrimpIdxsToRemove = [];
+	
+	      laserBeams.forEach(function (beam, beamIdx) {
+	        // only allow a laser beam a single hit
+	        var hit = false;
+	
+	        var spongeIdx = _this3.checkLaserBeamSpongeCollisions(beam);
+	        if (spongeIdx !== false) {
+	          if (spongeIdx !== true) {
+	            spongeIdxsToRemove.push(spongeIdx);
+	          }
+	          beamIdxsToRemove.push(beamIdx);
+	          hit = true;
+	        }
+	
+	        if (!hit) {
+	          var segmentIdx = _this3.checkLaserBeamSegmentCollisions(beam);
+	          if (segmentIdx !== false) {
+	            segmentIdxsToRemove.push(segmentIdx);
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
+	          }
+	        }
+	
+	        if (!hit) {
+	          var crabHit = _this3.checkLaserBeamCrabCollisions(beam);
+	          if (crabHit) {
+	            board.removeCrab();
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
+	          }
+	        }
+	
+	        if (!hit) {
+	          var shrimpIdx = _this3.checkLaserBeamShrimpCollisions(beam);
+	          if (shrimpIdx !== false) {
+	            shrimpIdxsToRemove.push(shrimpIdx);
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
+	          }
+	        }
+	      });
+	
+	      board.removeLaserBeams(beamIdxsToRemove);
+	      board.removeSeaSponges(spongeIdxsToRemove);
+	      board.removeSegments(segmentIdxsToRemove);
+	      board.removeShrimp(shrimpIdxsToRemove);
+	    }
+	  }, {
+	    key: 'checkLaserBeamSpongeCollisions',
+	    value: function checkLaserBeamSpongeCollisions(beam) {
+	      var sponges = this.board.sponges;
+	      for (var i = 0; i < sponges.length; i++) {
+	        if (beam.overlaps(sponges[i])) {
+	          sponges[i].handleHit();
+	          if (sponges[i].hits <= 0) {
+	            this.game.incrementScore(_scores.SPONGE_HIT_SCORE);
+	            this.board.addScore(_score2.default.createScoreAboveObject(sponges[i], _scores.SPONGE_HIT_SCORE));
+	            this.soundHandler.playSeaSpongeDestroy();
+	            return i;
+	          } else {
+	            this.soundHandler.playSeaSpongeHit();
+	            return true;
+	          }
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamSegmentCollisions',
+	    value: function checkLaserBeamSegmentCollisions(beam) {
+	      var game = this.game;
+	      var segments = this.board.segments;
+	      for (var i = 0; i < segments.length; i++) {
+	        if (beam.overlaps(segments[i])) {
+	          var score = _scores.SEGMENT_HIT_SCORE;
+	          if (segments[i] instanceof _head2.default) {
+	            score = _scores.HEAD_HIT_SCORE;
+	          }
+	          game.incrementScore(score);
+	          this.board.addScore(_score2.default.createScoreAboveObject(segments[i], score));
+	          this.soundHandler.playSegmentHit();
+	          return i;
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamCrabCollisions',
+	    value: function checkLaserBeamCrabCollisions(beam) {
+	      var game = this.game;
+	      var crab = this.board.crab;
+	      if (crab && beam.overlaps(crab)) {
+	        var score = _scores.CRAB_HIT_SCORE_FAR;
+	        if (crab.getY() <= 500 && crab.getY() > 400) {
+	          score = _scores.CRAB_HIT_SCORE_MIDDLE;
+	        } else if (crab.getY() > 500) {
+	          score = _scores.CRAB_HIT_SCORE_CLOSE;
+	        }
+	        game.incrementScore(score);
+	        this.board.addScore(_score2.default.createScoreAboveObject(crab, score));
+	        this.soundHandler.playCrabHit();
+	        return true;
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamShrimpCollisions',
+	    value: function checkLaserBeamShrimpCollisions(beam) {
+	      var shrimp = this.board.shrimp;
+	      for (var i = 0; i < shrimp.length; i++) {
+	        if (beam.overlaps(shrimp[i])) {
+	          this.game.incrementScore(_scores.SHRIMP_HIT_SCORE);
+	          this.board.addScore(_score2.default.createScoreAboveObject(shrimp[i], _scores.SHRIMP_HIT_SCORE));
+	          this.soundHandler.playShrimpHit();
+	          return i;
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkExplosionCollisions',
+	    value: function checkExplosionCollisions() {
+	      var _this4 = this;
+	
+	      var game = this.game;
+	      var board = this.board;
+	      var explosions = this.board.explosions;
+	      var sponges = this.board.sponges;
+	      var segments = this.board.segments;
+	      var shrimps = this.board.shrimp;
+	      var crab = this.board.crab;
+	      var spongeIdxsToRemove = [];
+	      var segmentIdxsToRemove = [];
+	      var shrimpIdxsToRemove = [];
+	
+	      explosions.forEach(function (explosion) {
+	        if (explosion.overlaps(_this4.board.diver)) {
+	          game.endGame();
+	        }
+	
+	        if (game.started) {
+	          (function () {
+	            var score = void 0;
+	
+	            if (crab) {
+	              if (explosion.overlaps(crab)) {
+	                score = _scores.CRAB_HIT_SCORE_CLOSE / 2;
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(crab, score));
+	                game.incrementScore(score);
+	                board.removeCrab();
+	              }
+	            }
+	            sponges.forEach(function (sponge, idx) {
+	              if (explosion.overlaps(sponge)) {
+	                spongeIdxsToRemove.push(idx);
+	              }
+	            });
+	            segments.forEach(function (segment, idx) {
+	              if (explosion.overlaps(segment)) {
+	                segmentIdxsToRemove.push(idx);
+	                if (segment instanceof _head2.default) {
+	                  score = _scores.HEAD_HIT_SCORE / 2;
+	                } else {
+	                  score = _scores.SEGMENT_HIT_SCORE / 2;
+	                }
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(segment, score));
+	                game.incrementScore(score);
+	              }
+	            });
+	            shrimps.forEach(function (shrimp, idx) {
+	              if (explosion.overlaps(shrimp)) {
+	                shrimpIdxsToRemove.push(idx);
+	                score = _scores.SHRIMP_HIT_SCORE / 2;
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(shrimp, score));
+	                game.incrementScore(score);
+	              }
+	            });
+	          })();
+	        }
+	      });
+	
+	      board.removeSeaSponges(spongeIdxsToRemove);
+	      board.removeSegments(segmentIdxsToRemove, false);
+	      board.removeShrimp(shrimpIdxsToRemove);
+	    }
+	  }]);
+	
+	  return CollisionHandler;
+	}();
+	
+	exports.default = CollisionHandler;
+
+/***/ },
+/* 31 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
+	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
+	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
+	var CRAB_HIT_SCORE_CLOSE = exports.CRAB_HIT_SCORE_CLOSE = 300;
+	var CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_MIDDLE = 600;
+	var CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_FAR = 900;
+	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
 
 /***/ }
 /******/ ]);
