@@ -129,6 +129,10 @@
 	
 	var _board2 = _interopRequireDefault(_board);
 	
+	var _bubble = __webpack_require__(24);
+	
+	var _bubble2 = _interopRequireDefault(_bubble);
+	
 	var _head = __webpack_require__(16);
 	
 	var _head2 = _interopRequireDefault(_head);
@@ -178,10 +182,12 @@
 	    this.updateHighScore(cookieHighScore ? parseInt(cookieHighScore) : 0);
 	
 	    this.keyHandler.attachListeners();
+	    this.board.addBubbles(20);
 	
 	    this.playSegmentStep = this.playSegmentStep.bind(this);
 	    this.tickBombs = this.tickBombs.bind(this);
 	    this.tickExplosions = this.tickExplosions.bind(this);
+	    this.tryAddBubble = this.tryAddBubble.bind(this);
 	    this.tryAddSpider = this.tryAddSpider.bind(this);
 	    this.tryAddShrimp = this.tryAddShrimp.bind(this);
 	  }
@@ -222,6 +228,7 @@
 	      _createjs2.default.Ticker.on("tick", this.playSegmentStep);
 	      _createjs2.default.Ticker.on("tick", this.tickBombs);
 	      _createjs2.default.Ticker.on("tick", this.tickExplosions);
+	      _createjs2.default.Ticker.on("tick", this.tryAddBubble);
 	      _createjs2.default.Ticker.on("tick", this.tryAddSpider);
 	      _createjs2.default.Ticker.on("tick", this.tryAddShrimp);
 	    }
@@ -310,6 +317,19 @@
 	      });
 	
 	      this.removeExplosions(explosionIdxsToRemove);
+	    }
+	  }, {
+	    key: 'tryAddBubble',
+	    value: function tryAddBubble(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (_createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
+	        var x = this.stage.canvas.width * Math.random();
+	        var y = this.stage.canvas.height;
+	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
+	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
+	        board.addBubble(bubble);
+	      }
 	    }
 	  }, {
 	    key: 'tryAddPolychaete',
@@ -405,39 +425,48 @@
 	      }
 	    }
 	  }, {
-	    key: 'removeLaserBeams',
-	    value: function removeLaserBeams(idxsToRemove) {
+	    key: 'removeBubbles',
+	    value: function removeBubbles(idxsToRemove) {
 	      var _this4 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this4.board.removeLaserBeamAtIdx(idx);
+	        _this4.board.removeBubbleAtIdx(idx);
+	      });
+	    }
+	  }, {
+	    key: 'removeLaserBeams',
+	    value: function removeLaserBeams(idxsToRemove) {
+	      var _this5 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this5.board.removeLaserBeamAtIdx(idx);
 	      });
 	    }
 	  }, {
 	    key: 'removeBombs',
 	    value: function removeBombs(idxsToRemove) {
-	      var _this5 = this;
+	      var _this6 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this5.board.removeBombAtIdx(idx);
+	        _this6.board.removeBombAtIdx(idx);
 	      });
 	    }
 	  }, {
 	    key: 'removeExplosions',
 	    value: function removeExplosions(idxsToRemove) {
-	      var _this6 = this;
+	      var _this7 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this6.board.removeExplosionAtIdx(idx);
+	        _this7.board.removeExplosionAtIdx(idx);
 	      });
 	    }
 	  }, {
 	    key: 'removeShrimp',
 	    value: function removeShrimp(idxsToRemove) {
-	      var _this7 = this;
+	      var _this8 = this;
 	
 	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this7.board.removeShrimpAtIdx(idx);
+	        _this8.board.removeShrimpAtIdx(idx);
 	      });
 	      if (this.board.shrimp.length === 0) {
 	        this.soundHandler.stopShrimpOscillator();
@@ -497,7 +526,7 @@
 	  }, {
 	    key: 'endGame',
 	    value: function endGame() {
-	      var _this8 = this;
+	      var _this9 = this;
 	
 	      this.soundHandler.reset();
 	      this.setPaused(true);
@@ -505,7 +534,7 @@
 	      this.started = false;
 	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
 	      window.setTimeout(function () {
-	        return _this8.uiHandler.showGameOverPopup(_this8.newHighScore);
+	        return _this9.uiHandler.showGameOverPopup(_this9.newHighScore);
 	      }, 100);
 	    }
 	  }]);
@@ -686,7 +715,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.createShrimpSpriteSheet = exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createExplosionSpriteSheet = exports.createBombSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
+	exports.createLargeBubbleSpriteSheet = exports.createMediumBubbleSpriteSheet = exports.createSmallBubbleSpriteSheet = exports.createShrimpSpriteSheet = exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createExplosionSpriteSheet = exports.createBombSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
 	
 	var _createjs = __webpack_require__(1);
 	
@@ -715,8 +744,8 @@
 	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
 	  return new _createjs2.default.SpriteSheet({
 	    frames: {
-	      width: 2,
-	      height: 12
+	      width: 4,
+	      height: 16
 	    },
 	    images: ['./assets/laser_beam.png'],
 	    animations: {
@@ -842,6 +871,51 @@
 	      height: 20
 	    },
 	    images: ['./assets/shrimp.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framrate: frameRate
+	  });
+	};
+	
+	var createSmallBubbleSpriteSheet = exports.createSmallBubbleSpriteSheet = function createSmallBubbleSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 16,
+	      height: 16
+	    },
+	    images: ['./assets/bubble_small.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framrate: frameRate
+	  });
+	};
+	
+	var createMediumBubbleSpriteSheet = exports.createMediumBubbleSpriteSheet = function createMediumBubbleSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 32,
+	      height: 32
+	    },
+	    images: ['./assets/bubble_medium.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framrate: frameRate
+	  });
+	};
+	
+	var createLargeBubbleSpriteSheet = exports.createLargeBubbleSpriteSheet = function createLargeBubbleSpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 64,
+	      height: 64
+	    },
+	    images: ['./assets/bubble_large.png'],
 	    animations: {
 	      default: 0
 	    },
@@ -1283,6 +1357,7 @@
 	    this.sprite.x = options.x;
 	    this.sprite.y = options.y;
 	    this.sprite.setBounds(options.x, options.y, options.width, options.height);
+	    this.sprite.snapToPixel = true;
 	  }
 	
 	  _createClass(GameObject, [{
@@ -1478,8 +1553,8 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
 	var VELOCITY_Y = -16;
-	var BEAM_WIDTH = exports.BEAM_WIDTH = 2;
-	var BEAM_HEIGHT = exports.BEAM_HEIGHT = 12;
+	var BEAM_WIDTH = exports.BEAM_WIDTH = 4;
+	var BEAM_HEIGHT = exports.BEAM_HEIGHT = 16;
 	
 	var LASER_BEAM_SHEET = (0, _sprite_sheets.createLaserBeamSpriteSheet)();
 	
@@ -1749,10 +1824,24 @@
 	    key: "updatePositions",
 	    value: function updatePositions(e) {
 	      if (e.paused) return;
+	      this.updateBubblePositions();
 	      this.updateLaserBeamPositions();
 	      this.updateSegmentPositions();
 	      this.updateShrimpPositions();
 	      this.updateSpiderPosition();
+	    }
+	  }, {
+	    key: "updateBubblePositions",
+	    value: function updateBubblePositions() {
+	      var bubbles = this.board.bubbles;
+	      var bubbleIdxsToRemove = [];
+	      bubbles.forEach(function (bubble, idx) {
+	        bubble.updatePosition();
+	        if (bubble.getY() <= -bubble.getHeight()) {
+	          bubbleIdxsToRemove.push(idx);
+	        }
+	      });
+	      this.game.removeBubbles(bubbleIdxsToRemove);
 	    }
 	  }, {
 	    key: "updateLaserBeamPositions",
@@ -24610,6 +24699,10 @@
 	
 	var _util = __webpack_require__(5);
 	
+	var _bubble = __webpack_require__(24);
+	
+	var _bubble2 = _interopRequireDefault(_bubble);
+	
 	var _diver = __webpack_require__(8);
 	
 	var _diver2 = _interopRequireDefault(_diver);
@@ -24646,6 +24739,7 @@
 	
 	    this.stage = options.stage;
 	
+	    this.bubbles = [];
 	    this.laserBeams = [];
 	    this.bombs = [];
 	    this.explosions = [];
@@ -24689,10 +24783,24 @@
 	    key: 'setBackground',
 	    value: function setBackground() {
 	      var background = new _createjs2.default.Shape();
-	      background.graphics.beginFill('black').drawRect(0, 0, this.stage.canvas.width, this.stage.canvas.height);
+	      background.graphics.beginFill('#002e9a').drawRect(0, 0, this.stage.canvas.width, this.stage.canvas.height);
 	      this.stage.addChild(background);
 	      this.stage.setChildIndex(background, 0);
 	      this.stage.update();
+	    }
+	  }, {
+	    key: 'addBubbles',
+	    value: function addBubbles(numBubbles) {
+	      var bubblesPlaced = 0;
+	
+	      while (bubblesPlaced < numBubbles) {
+	        var x = this.stage.canvas.width * Math.random();
+	        var y = this.stage.canvas.height * Math.random();
+	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
+	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
+	        this.addBubble(bubble);
+	        bubblesPlaced++;
+	      }
 	    }
 	  }, {
 	    key: 'addSeaSponges',
@@ -24776,6 +24884,14 @@
 	      sponge.setStage(this.stage);
 	      this.stage.addChild(sponge.sprite);
 	      this.sponges.push(sponge);
+	    }
+	  }, {
+	    key: 'addBubble',
+	    value: function addBubble(bubble) {
+	      bubble.setStage(this.stage);
+	      this.stage.addChild(bubble.sprite);
+	      this.stage.setChildIndex(bubble.sprite, 1);
+	      this.bubbles.push(bubble);
 	    }
 	  }, {
 	    key: 'addShrimp',
@@ -24902,6 +25018,14 @@
 	        this.spider.destroy();
 	        this.spider = null;
 	      }
+	    }
+	  }, {
+	    key: 'removeBubbleAtIdx',
+	    value: function removeBubbleAtIdx(idx) {
+	      var bubble = this.bubbles[idx];
+	      this.stage.removeChild(bubble.sprite);
+	      bubble.destroy();
+	      this.bubbles.splice(idx, 1);
 	    }
 	  }, {
 	    key: 'removeLaserBeamAtIdx',
@@ -25245,6 +25369,94 @@
 	}(_moving_object2.default);
 	
 	exports.default = Shrimp;
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.BUBBLE_SIZES = exports.BUBBLE_LARGE = exports.BUBBLE_MEDIUM = exports.BUBBLE_SMALL = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _BUBBLE_SHEETS, _BUBBLE_DIAMETERS, _BUBBLE_VELOCITIES;
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _moving_object = __webpack_require__(11);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+	
+	var BUBBLE_SMALL = exports.BUBBLE_SMALL = 'BUBBLE_SMALL';
+	var BUBBLE_MEDIUM = exports.BUBBLE_MEDIUM = 'BUBBLE_MEDIUM';
+	var BUBBLE_LARGE = exports.BUBBLE_LARGE = 'BUBBLE_LARGE';
+	var BUBBLE_SIZES = exports.BUBBLE_SIZES = [BUBBLE_SMALL, BUBBLE_MEDIUM, BUBBLE_LARGE];
+	
+	var SMALL_BUBBLE_SHEET = (0, _sprite_sheets.createSmallBubbleSpriteSheet)();
+	var MEDIUM_BUBBLE_SHEET = (0, _sprite_sheets.createMediumBubbleSpriteSheet)();
+	var LARGE_BUBBLE_SHEET = (0, _sprite_sheets.createLargeBubbleSpriteSheet)();
+	
+	var BUBBLE_SHEETS = (_BUBBLE_SHEETS = {}, _defineProperty(_BUBBLE_SHEETS, BUBBLE_SMALL, SMALL_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_MEDIUM, MEDIUM_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_LARGE, LARGE_BUBBLE_SHEET), _BUBBLE_SHEETS);
+	
+	var BUBBLE_DIAMETERS = (_BUBBLE_DIAMETERS = {}, _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_SMALL, 16), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_MEDIUM, 32), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_LARGE, 64), _BUBBLE_DIAMETERS);
+	
+	var BUBBLE_VELOCITIES = (_BUBBLE_VELOCITIES = {}, _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_SMALL, -.5), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_MEDIUM, -.75), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_LARGE, -1), _BUBBLE_VELOCITIES);
+	
+	var Bubble = function (_MovingObject) {
+	  _inherits(Bubble, _MovingObject);
+	
+	  function Bubble(options) {
+	    _classCallCheck(this, Bubble);
+	
+	    var bubbleSize = options.bubbleSize || BUBBLE_SMALL;
+	    var bubbleSprite = new _createjs2.default.Sprite(BUBBLE_SHEETS[bubbleSize], 'default');
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: BUBBLE_DIAMETERS[bubbleSize],
+	      height: BUBBLE_DIAMETERS[bubbleSize],
+	      direction: _moving_object.UP,
+	      velocityY: BUBBLE_VELOCITIES[bubbleSize],
+	      velocityX: .5,
+	      sprite: bubbleSprite
+	    };
+	
+	    return _possibleConstructorReturn(this, (Bubble.__proto__ || Object.getPrototypeOf(Bubble)).call(this, Object.assign(defaultOptions, options)));
+	  }
+	
+	  _createClass(Bubble, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      if (Math.random() <= .005) {
+	        this.velocityX = -this.velocityX;
+	      }
+	      _moving_object2.default.prototype.updatePosition.call(this);
+	    }
+	  }]);
+	
+	  return Bubble;
+	}(_moving_object2.default);
+	
+	exports.default = Bubble;
 
 /***/ }
 /******/ ]);
