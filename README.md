@@ -15,10 +15,11 @@ See the [Development README](docs/development-readme.md) to learn more about the
 All in-game characters/objects extend the `GameObject` base class.  This provides base size, movement/positioning, and sprite functionality.  Objects that move automatically based on time extend `MovingObject`, a subclass of `GameObject`.  This provides direction and velocity attributes and a generic `updatePosition` method.  Functionality unique to specific subclasses includes the following:
 
 - `Diver`: Laser firing ability.
-- `LaserBeam`: Laser beams move vertically in a straight line, so they use the `updatePosition` method inherited from `MovingObject`.
+- `Bubble`: Supports three different bubble sizes and randomly changing x direction.  Uses the `updatePosition` method inherited from `MovingObject`.
+- `LaserBeam`: Laser beams move vertically in a straight line, they use the `updatePosition` method inherited from `MovingObject`.
 - `SeaSponge`: Handling of multiple laser beam hits.
 - `Shrimp`: Provides a `dropSeaSponge` method which can be called to drop a sea sponge at the shrimp's current position. (Shrimps move vertically in a straight line, so they use the `updatePosition` method inherited from `MovingObject`.)
-- `Spider`: Provides a custom `updatePosition` method with helper methods to change direction and velocity semi-randomly at 'decision points'.
+- `Crab`: Provides a custom `updatePosition` method with helper methods to change direction and velocity semi-randomly at 'decision points'.
 - `Segment`: Polychaete segment movement and connection to adjacent segments (linked-list style).
 - `Head`: Class/static method to create a new Head based on an existing Segment.
 
