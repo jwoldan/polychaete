@@ -22,6 +22,7 @@ main {
 
   font-family: 'Play', sans-serif;
   font-size: 16px;
+  color: #002e9a;
 }
 
 h1 {
@@ -42,15 +43,15 @@ p {
 }
 
 a {
-  color: black;
+  color: #002e9a;
 }
 
 a:visited {
-  color: black;
+  color: #002e9a;
 }
 
 button {
-  border: 1px solid black;
+  border: 1px solid #002e9a;
   border-radius: 2px;
   padding: 2px 5px;
 
@@ -59,7 +60,7 @@ button {
 }
 
 button:hover {
-  background-color: black;
+  background-color: #002e9a;
   color: white;
 }
 
@@ -75,7 +76,7 @@ button:hover {
   font-family: 'Play', sans-serif;
   font-size: 16px;
 
-  background-color: black;
+  background-color: #002e9a;
   color: #ddd;
 }
 
@@ -113,7 +114,7 @@ button:hover {
   margin: 5px;
   padding: 20px 10px;
 
-  border: 1px solid black;
+  border: 1px solid #002e9a;
   border-radius: 2px;
 }
 
