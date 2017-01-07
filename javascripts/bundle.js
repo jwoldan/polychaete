@@ -89,7 +89,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.SHRIMP_HIT_SCORE = exports.SPIDER_HIT_SCORE_FAR = exports.SPIDER_HIT_SCORE_MIDDLE = exports.SPIDER_HIT_SCORE_CLOSE = exports.SEGMENT_HIT_SCORE = exports.HEAD_HIT_SCORE = exports.SPONGE_HIT_SCORE = undefined;
+	exports.SHRIMP_HIT_SCORE = exports.CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_CLOSE = exports.SEGMENT_HIT_SCORE = exports.HEAD_HIT_SCORE = exports.SPONGE_HIT_SCORE = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -143,7 +143,7 @@
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _spider = __webpack_require__(22);
+	var _crab = __webpack_require__(25);
 	
 	var _shrimp = __webpack_require__(23);
 	
@@ -159,9 +159,9 @@
 	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
 	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
 	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
-	var SPIDER_HIT_SCORE_CLOSE = exports.SPIDER_HIT_SCORE_CLOSE = 300;
-	var SPIDER_HIT_SCORE_MIDDLE = exports.SPIDER_HIT_SCORE_MIDDLE = 600;
-	var SPIDER_HIT_SCORE_FAR = exports.SPIDER_HIT_SCORE_FAR = 900;
+	var CRAB_HIT_SCORE_CLOSE = exports.CRAB_HIT_SCORE_CLOSE = 300;
+	var CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_MIDDLE = 600;
+	var CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_FAR = 900;
 	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
 	
 	var Game = function () {
@@ -188,7 +188,7 @@
 	    this.tickBombs = this.tickBombs.bind(this);
 	    this.tickExplosions = this.tickExplosions.bind(this);
 	    this.tryAddBubble = this.tryAddBubble.bind(this);
-	    this.tryAddSpider = this.tryAddSpider.bind(this);
+	    this.tryAddCrab = this.tryAddCrab.bind(this);
 	    this.tryAddShrimp = this.tryAddShrimp.bind(this);
 	  }
 	
@@ -229,7 +229,7 @@
 	      _createjs2.default.Ticker.on("tick", this.tickBombs);
 	      _createjs2.default.Ticker.on("tick", this.tickExplosions);
 	      _createjs2.default.Ticker.on("tick", this.tryAddBubble);
-	      _createjs2.default.Ticker.on("tick", this.tryAddSpider);
+	      _createjs2.default.Ticker.on("tick", this.tryAddCrab);
 	      _createjs2.default.Ticker.on("tick", this.tryAddShrimp);
 	    }
 	  }, {
@@ -359,17 +359,17 @@
 	      }
 	    }
 	  }, {
-	    key: 'tryAddSpider',
-	    value: function tryAddSpider(e) {
+	    key: 'tryAddCrab',
+	    value: function tryAddCrab(e) {
 	      if (e.paused) return;
 	      var board = this.board;
-	      if (this.started && !board.spider && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
+	      if (this.started && !board.crab && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
 	        var random = (0, _util.getRandomInt)(0, 8);
 	        if (random <= this.level) {
-	          board.addSpider({
-	            maximumVelocity: _spider.SPIDER_MIN_VELOCITY + 2 * this.level
+	          board.addCrab({
+	            maximumVelocity: _crab.CRAB_MIN_VELOCITY + 2 * this.level
 	          });
-	          this.soundHandler.startSpiderSequence();
+	          this.soundHandler.startCrabSequence();
 	        }
 	      }
 	    }
@@ -488,10 +488,10 @@
 	      });
 	    }
 	  }, {
-	    key: 'removeSpider',
-	    value: function removeSpider() {
-	      this.board.removeSpider();
-	      this.soundHandler.stopSpiderSequence();
+	    key: 'removeCrab',
+	    value: function removeCrab() {
+	      this.board.removeCrab();
+	      this.soundHandler.stopCrabSequence();
 	    }
 	  }, {
 	    key: 'incrementScore',
@@ -715,7 +715,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.createLargeBubbleSpriteSheet = exports.createMediumBubbleSpriteSheet = exports.createSmallBubbleSpriteSheet = exports.createShrimpSpriteSheet = exports.createSpiderSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createExplosionSpriteSheet = exports.createBombSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
+	exports.createLargeBubbleSpriteSheet = exports.createMediumBubbleSpriteSheet = exports.createSmallBubbleSpriteSheet = exports.createShrimpSpriteSheet = exports.createCrabSpriteSheet = exports.createSeaSpongeSpriteSheet = exports.createSegmentSpriteSheet = exports.createHeadSpriteSheet = exports.createExplosionSpriteSheet = exports.createBombSpriteSheet = exports.createLaserBeamSpriteSheet = exports.createDiverSpriteSheet = exports.ANIMATION_RATE = exports.FPS = undefined;
 	
 	var _createjs = __webpack_require__(1);
 	
@@ -848,14 +848,14 @@
 	  });
 	};
 	
-	var createSpiderSpriteSheet = exports.createSpiderSpriteSheet = function createSpiderSpriteSheet() {
+	var createCrabSpriteSheet = exports.createCrabSpriteSheet = function createCrabSpriteSheet() {
 	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ANIMATION_RATE;
 	  return new _createjs2.default.SpriteSheet({
 	    frames: {
 	      width: 25,
 	      height: 15
 	    },
-	    images: ['./assets/spider.png'],
+	    images: ['./assets/crab.png'],
 	    animations: {
 	      default: 0
 	    },
@@ -1828,7 +1828,7 @@
 	      this.updateLaserBeamPositions();
 	      this.updateSegmentPositions();
 	      this.updateShrimpPositions();
-	      this.updateSpiderPosition();
+	      this.updateCrabPosition();
 	    }
 	  }, {
 	    key: "updateBubblePositions",
@@ -1905,12 +1905,12 @@
 	      this.game.removeShrimp(shrimpIdxsToRemove);
 	    }
 	  }, {
-	    key: "updateSpiderPosition",
-	    value: function updateSpiderPosition() {
-	      var spider = this.board.spider;
-	      if (spider) {
-	        spider.updatePosition();
-	        if (!spider.isPartiallyInMoveBounds()) this.game.removeSpider();
+	    key: "updateCrabPosition",
+	    value: function updateCrabPosition() {
+	      var crab = this.board.crab;
+	      if (crab) {
+	        crab.updatePosition();
+	        if (!crab.isPartiallyInMoveBounds()) this.game.removeCrab();
 	      }
 	    }
 	  }]);
@@ -1961,7 +1961,7 @@
 	      if (game.started) {
 	        this.checkExplosionCollisions();
 	        this.checkSegmentDiverCollisions();
-	        this.checkSpiderCollisions();
+	        this.checkCrabCollisions();
 	        this.checkShrimpDiverCollisions();
 	      }
 	      if (game.started) {
@@ -1983,18 +1983,18 @@
 	      });
 	    }
 	  }, {
-	    key: 'checkSpiderCollisions',
-	    value: function checkSpiderCollisions() {
+	    key: 'checkCrabCollisions',
+	    value: function checkCrabCollisions() {
 	      var game = this.game;
-	      var spider = this.board.spider;
+	      var crab = this.board.crab;
 	      var spongeIdxsToRemove = [];
 	
-	      if (spider) {
-	        if (spider.overlaps(this.board.diver)) {
+	      if (crab) {
+	        if (crab.overlaps(this.board.diver)) {
 	          game.endGame();
 	        }
 	        this.board.sponges.forEach(function (sponge, spongeIdx) {
-	          if (spider.overlaps(sponge)) {
+	          if (crab.overlaps(sponge)) {
 	            spongeIdxsToRemove.push(spongeIdx);
 	          }
 	        });
@@ -2047,9 +2047,9 @@
 	        }
 	
 	        if (!hit) {
-	          var spiderHit = _this3.checkLaserBeamSpiderCollisions(beam);
-	          if (spiderHit) {
-	            game.removeSpider();
+	          var crabHit = _this3.checkLaserBeamCrabCollisions(beam);
+	          if (crabHit) {
+	            game.removeCrab();
 	            beamIdxsToRemove.push(beamIdx);
 	            hit = true;
 	          }
@@ -2108,19 +2108,19 @@
 	      return false;
 	    }
 	  }, {
-	    key: 'checkLaserBeamSpiderCollisions',
-	    value: function checkLaserBeamSpiderCollisions(beam) {
+	    key: 'checkLaserBeamCrabCollisions',
+	    value: function checkLaserBeamCrabCollisions(beam) {
 	      var game = this.game;
-	      var spider = this.board.spider;
-	      if (spider && beam.overlaps(spider)) {
-	        if (spider.getY() > 500) {
-	          game.incrementScore(_game.SPIDER_HIT_SCORE_CLOSE);
-	        } else if (spider.getY() > 400) {
-	          game.incrementScore(_game.SPIDER_HIT_SCORE_MIDDLE);
+	      var crab = this.board.crab;
+	      if (crab && beam.overlaps(crab)) {
+	        if (crab.getY() > 500) {
+	          game.incrementScore(_game.CRAB_HIT_SCORE_CLOSE);
+	        } else if (crab.getY() > 400) {
+	          game.incrementScore(_game.CRAB_HIT_SCORE_MIDDLE);
 	        } else {
-	          game.incrementScore(_game.SPIDER_HIT_SCORE_FAR);
+	          game.incrementScore(_game.CRAB_HIT_SCORE_FAR);
 	        }
-	        this.soundHandler.playSpiderHit();
+	        this.soundHandler.playCrabHit();
 	        return true;
 	      }
 	      return false;
@@ -2148,7 +2148,7 @@
 	      var sponges = this.board.sponges;
 	      var segments = this.board.segments;
 	      var shrimps = this.board.shrimp;
-	      var spider = this.board.spider;
+	      var crab = this.board.crab;
 	      var spongeIdxsToRemove = [];
 	      var segmentIdxsToRemove = [];
 	      var shrimpIdxsToRemove = [];
@@ -2159,10 +2159,10 @@
 	        }
 	
 	        if (game.started) {
-	          if (spider) {
-	            if (explosion.overlaps(spider)) {
-	              game.removeSpider();
-	              game.incrementScore(_game.SPIDER_HIT_SCORE_CLOSE / 2);
+	          if (crab) {
+	            if (explosion.overlaps(crab)) {
+	              game.removeCrab();
+	              game.incrementScore(_game.CRAB_HIT_SCORE_CLOSE / 2);
 	            }
 	          }
 	          sponges.forEach(function (sponge, idx) {
@@ -2501,7 +2501,7 @@
 	    this.createStepNoise();
 	    this.createExplosionNoise();
 	    this.createBombIncrementSequence();
-	    this.createSpiderSequence();
+	    this.createCrabSequence();
 	    this.createShrimpOscillator();
 	    this.resetBPM();
 	  }
@@ -2610,14 +2610,14 @@
 	      this.bombIncrementSequence.loop = false;
 	    }
 	  }, {
-	    key: 'createSpiderSequence',
-	    value: function createSpiderSequence() {
+	    key: 'createCrabSequence',
+	    value: function createCrabSequence() {
 	      var _this2 = this;
 	
-	      this.spiderSequence = new _tone2.default.Sequence(function (time, note) {
+	      this.crabSequence = new _tone2.default.Sequence(function (time, note) {
 	        _this2.synth.triggerAttackRelease(note, '60hz', undefined, 0.1);
 	      }, ['C#4', 'D#4', 'G#4', 'F4'], "16n");
-	      this.spiderSequence.humanize = true;
+	      this.crabSequence.humanize = true;
 	    }
 	  }, {
 	    key: 'createShrimpOscillator',
@@ -2667,8 +2667,8 @@
 	      this.synth.triggerAttackRelease('F3', '40hz');
 	    }
 	  }, {
-	    key: 'playSpiderHit',
-	    value: function playSpiderHit() {
+	    key: 'playCrabHit',
+	    value: function playCrabHit() {
 	      this.synth.triggerAttackRelease('G#4', '20hz');
 	    }
 	  }, {
@@ -2692,14 +2692,14 @@
 	      this.explosionNoise.triggerAttackRelease('60hz');
 	    }
 	  }, {
-	    key: 'startSpiderSequence',
-	    value: function startSpiderSequence() {
-	      this.spiderSequence.start();
+	    key: 'startCrabSequence',
+	    value: function startCrabSequence() {
+	      this.crabSequence.start();
 	    }
 	  }, {
-	    key: 'stopSpiderSequence',
-	    value: function stopSpiderSequence() {
-	      this.spiderSequence.stop();
+	    key: 'stopCrabSequence',
+	    value: function stopCrabSequence() {
+	      this.crabSequence.stop();
 	    }
 	  }, {
 	    key: 'startShrimpOscillator',
@@ -2745,7 +2745,7 @@
 	  }, {
 	    key: 'reset',
 	    value: function reset() {
-	      this.stopSpiderSequence();
+	      this.stopCrabSequence();
 	      this.stopShrimpOscillator();
 	      this.pauseTransport(true);
 	    }
@@ -24721,9 +24721,9 @@
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _spider = __webpack_require__(22);
+	var _crab = __webpack_require__(25);
 	
-	var _spider2 = _interopRequireDefault(_spider);
+	var _crab2 = _interopRequireDefault(_crab);
 	
 	var _shrimp = __webpack_require__(23);
 	
@@ -24746,7 +24746,7 @@
 	    this.segments = [];
 	    this.sponges = [];
 	    this.shrimp = [];
-	    this.spider = null;
+	    this.crab = null;
 	
 	    this.setBackground();
 	  }
@@ -24761,7 +24761,7 @@
 	      this.removeAllSeaSponges();
 	      this.removeAllSegments();
 	      this.removeAllShrimp();
-	      this.removeSpider();
+	      this.removeCrab();
 	    }
 	  }, {
 	    key: 'addDiver',
@@ -24903,8 +24903,8 @@
 	      this.shrimp.push(shrimp);
 	    }
 	  }, {
-	    key: 'addSpider',
-	    value: function addSpider(options) {
+	    key: 'addCrab',
+	    value: function addCrab(options) {
 	      var startLeft = Math.random() < .5;
 	      var x = void 0;
 	      var direction = void 0;
@@ -24918,9 +24918,9 @@
 	
 	      var y = (0, _util.getRandomInt)(0, 20) * 25;
 	
-	      this.spider = new _spider2.default(Object.assign({ x: x, y: y, direction: direction }, options));
-	      this.spider.setStage(this.stage);
-	      this.stage.addChild(this.spider.sprite);
+	      this.crab = new _crab2.default(Object.assign({ x: x, y: y, direction: direction }, options));
+	      this.crab.setStage(this.stage);
+	      this.stage.addChild(this.crab.sprite);
 	    }
 	  }, {
 	    key: 'addLaserBeam',
@@ -25011,12 +25011,12 @@
 	      this.shrimp = [];
 	    }
 	  }, {
-	    key: 'removeSpider',
-	    value: function removeSpider() {
-	      if (this.spider) {
-	        this.stage.removeChild(this.spider.sprite);
-	        this.spider.destroy();
-	        this.spider = null;
+	    key: 'removeCrab',
+	    value: function removeCrab() {
+	      if (this.crab) {
+	        this.stage.removeChild(this.crab.sprite);
+	        this.crab.destroy();
+	        this.crab = null;
 	      }
 	    }
 	  }, {
@@ -25185,118 +25185,7 @@
 	exports.default = SeaSponge;
 
 /***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.SPIDER_MIN_VELOCITY = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _util = __webpack_require__(5);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _moving_object2 = _interopRequireDefault(_moving_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _diver = __webpack_require__(8);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var SPIDER_SHEET = (0, _sprite_sheets.createSpiderSpriteSheet)();
-	
-	var SPIDER_MIN_VELOCITY = exports.SPIDER_MIN_VELOCITY = 4;
-	
-	var Spider = function (_MovingObject) {
-	  _inherits(Spider, _MovingObject);
-	
-	  function Spider() {
-	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-	
-	    _classCallCheck(this, Spider);
-	
-	    var spiderSprite = new _createjs2.default.Sprite(SPIDER_SHEET);
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: 25,
-	      height: 15,
-	      sprite: spiderSprite
-	    };
-	
-	    var _this = _possibleConstructorReturn(this, (Spider.__proto__ || Object.getPrototypeOf(Spider)).call(this, Object.assign(defaultOptions, options)));
-	
-	    _this.maxVelocity = options.maxVelocity || SPIDER_MIN_VELOCITY;
-	    _this.decisionPointX = _this.getX();
-	    _this.decisionPointY = _this.getY();
-	    return _this;
-	  }
-	
-	  _createClass(Spider, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      if (Math.abs(this.decisionPointX - this.getX()) <= Math.abs(this.velocityX) && Math.abs(this.decisionPointY - this.getY()) <= Math.abs(this.velocityY)) {
-	        this.updateDecisionPoint();
-	        this.updateVelocities();
-	      }
-	      this.changeX(this.velocityX);
-	      this.changeY(this.velocityY);
-	    }
-	  }, {
-	    key: 'updateDecisionPoint',
-	    value: function updateDecisionPoint() {
-	      var decisionXDelta = SPIDER_MIN_VELOCITY * (0, _util.getRandomInt)(10, 30);
-	      if (this.direction === _moving_object.LEFT) {
-	        this.decisionPointX = this.getX() - decisionXDelta;
-	      } else {
-	        this.decisionPointX = this.getX() + decisionXDelta;
-	      }
-	
-	      if (this.decisionPointY < _diver.DIVER_MIN_Y) {
-	        this.decisionPointY = _diver.DIVER_MIN_Y + SPIDER_MIN_VELOCITY * (0, _util.getRandomInt)(1, 50);
-	        if (this.decisionPointY > this.moveBounds.maxY) {
-	          this.decisionPointY = this.moveBounds.maxY - this.getHeight();
-	        }
-	      } else {
-	        this.decisionPointY = _diver.DIVER_MIN_Y - SPIDER_MIN_VELOCITY * (0, _util.getRandomInt)(20, 50);
-	      }
-	    }
-	  }, {
-	    key: 'updateVelocities',
-	    value: function updateVelocities() {
-	      var diffX = this.decisionPointX - this.getX();
-	      var diffY = this.decisionPointY - this.getY();
-	      var totalDelta = Math.sqrt(diffX * diffX + diffY * diffY);
-	
-	      var velocity = (0, _util.getRandomInt)(SPIDER_MIN_VELOCITY, this.maxVelocity);
-	      this.velocityX = diffX / totalDelta * velocity;
-	      this.velocityY = diffY / totalDelta * velocity;
-	    }
-	  }]);
-	
-	  return Spider;
-	}(_moving_object2.default);
-	
-	exports.default = Spider;
-
-/***/ },
+/* 22 */,
 /* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -25457,6 +25346,118 @@
 	}(_moving_object2.default);
 	
 	exports.default = Bubble;
+
+/***/ },
+/* 25 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.CRAB_MIN_VELOCITY = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(5);
+	
+	var _moving_object = __webpack_require__(11);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _diver = __webpack_require__(8);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var CRAB_SHEET = (0, _sprite_sheets.createCrabSpriteSheet)();
+	
+	var CRAB_MIN_VELOCITY = exports.CRAB_MIN_VELOCITY = 4;
+	
+	var Crab = function (_MovingObject) {
+	  _inherits(Crab, _MovingObject);
+	
+	  function Crab() {
+	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	
+	    _classCallCheck(this, Crab);
+	
+	    var crabSprite = new _createjs2.default.Sprite(CRAB_SHEET);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 25,
+	      height: 15,
+	      sprite: crabSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Crab.__proto__ || Object.getPrototypeOf(Crab)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.maxVelocity = options.maxVelocity || CRAB_MIN_VELOCITY;
+	    _this.decisionPointX = _this.getX();
+	    _this.decisionPointY = _this.getY();
+	    return _this;
+	  }
+	
+	  _createClass(Crab, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      if (Math.abs(this.decisionPointX - this.getX()) <= Math.abs(this.velocityX) && Math.abs(this.decisionPointY - this.getY()) <= Math.abs(this.velocityY)) {
+	        this.updateDecisionPoint();
+	        this.updateVelocities();
+	      }
+	      this.changeX(this.velocityX);
+	      this.changeY(this.velocityY);
+	    }
+	  }, {
+	    key: 'updateDecisionPoint',
+	    value: function updateDecisionPoint() {
+	      var decisionXDelta = CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(10, 30);
+	      if (this.direction === _moving_object.LEFT) {
+	        this.decisionPointX = this.getX() - decisionXDelta;
+	      } else {
+	        this.decisionPointX = this.getX() + decisionXDelta;
+	      }
+	
+	      if (this.decisionPointY < _diver.DIVER_MIN_Y) {
+	        this.decisionPointY = _diver.DIVER_MIN_Y + CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(1, 50);
+	        if (this.decisionPointY > this.moveBounds.maxY) {
+	          this.decisionPointY = this.moveBounds.maxY - this.getHeight();
+	        }
+	      } else {
+	        this.decisionPointY = _diver.DIVER_MIN_Y - CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(20, 50);
+	      }
+	    }
+	  }, {
+	    key: 'updateVelocities',
+	    value: function updateVelocities() {
+	      var diffX = this.decisionPointX - this.getX();
+	      var diffY = this.decisionPointY - this.getY();
+	      var totalDelta = Math.sqrt(diffX * diffX + diffY * diffY);
+	
+	      var velocity = (0, _util.getRandomInt)(CRAB_MIN_VELOCITY, this.maxVelocity);
+	      this.velocityX = diffX / totalDelta * velocity;
+	      this.velocityY = diffY / totalDelta * velocity;
+	    }
+	  }]);
+	
+	  return Crab;
+	}(_moving_object2.default);
+	
+	exports.default = Crab;
 
 /***/ }
 /******/ ]);
