@@ -89,7 +89,6 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.SHRIMP_HIT_SCORE = exports.CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_CLOSE = exports.SEGMENT_HIT_SCORE = exports.HEAD_HIT_SCORE = exports.SPONGE_HIT_SCORE = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -121,11 +120,11 @@
 	
 	var _collision_handler2 = _interopRequireDefault(_collision_handler);
 	
-	var _sound_handler = __webpack_require__(18);
+	var _sound_handler = __webpack_require__(21);
 	
 	var _sound_handler2 = _interopRequireDefault(_sound_handler);
 	
-	var _board = __webpack_require__(20);
+	var _board = __webpack_require__(23);
 	
 	var _board2 = _interopRequireDefault(_board);
 	
@@ -139,13 +138,13 @@
 	
 	var _segment = __webpack_require__(17);
 	
-	var _sea_sponge = __webpack_require__(21);
+	var _sea_sponge = __webpack_require__(25);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _crab = __webpack_require__(25);
+	var _crab = __webpack_require__(26);
 	
-	var _shrimp = __webpack_require__(23);
+	var _shrimp = __webpack_require__(27);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -155,14 +154,6 @@
 	var INITIAL_BOMB_COUNT = 1;
 	var MAX_BOMB_COUNT = 3;
 	var NEXT_BOMB_INCREMENT = 2500;
-	
-	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
-	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
-	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
-	var CRAB_HIT_SCORE_CLOSE = exports.CRAB_HIT_SCORE_CLOSE = 300;
-	var CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_MIDDLE = 600;
-	var CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_FAR = 900;
-	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
 	
 	var Game = function () {
 	  function Game(options) {
@@ -494,6 +485,15 @@
 	      this.soundHandler.stopCrabSequence();
 	    }
 	  }, {
+	    key: 'removeScores',
+	    value: function removeScores(idxsToRemove) {
+	      var _this9 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this9.board.removeScoreAtIdx(idx);
+	      });
+	    }
+	  }, {
 	    key: 'incrementScore',
 	    value: function incrementScore(addlScore) {
 	      this.currentScore += addlScore;
@@ -526,7 +526,7 @@
 	  }, {
 	    key: 'endGame',
 	    value: function endGame() {
-	      var _this9 = this;
+	      var _this10 = this;
 	
 	      this.soundHandler.reset();
 	      this.setPaused(true);
@@ -534,7 +534,7 @@
 	      this.started = false;
 	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
 	      window.setTimeout(function () {
-	        return _this9.uiHandler.showGameOverPopup(_this9.newHighScore);
+	        return _this10.uiHandler.showGameOverPopup(_this10.newHighScore);
 	      }, 100);
 	    }
 	  }]);
@@ -859,7 +859,7 @@
 	    animations: {
 	      default: 0
 	    },
-	    framrate: frameRate
+	    framerate: frameRate
 	  });
 	};
 	
@@ -874,7 +874,7 @@
 	    animations: {
 	      default: 0
 	    },
-	    framrate: frameRate
+	    framerate: frameRate
 	  });
 	};
 	
@@ -889,7 +889,7 @@
 	    animations: {
 	      default: 0
 	    },
-	    framrate: frameRate
+	    framerate: frameRate
 	  });
 	};
 	
@@ -904,7 +904,7 @@
 	    animations: {
 	      default: 0
 	    },
-	    framrate: frameRate
+	    framerate: frameRate
 	  });
 	};
 	
@@ -919,7 +919,7 @@
 	    animations: {
 	      default: 0
 	    },
-	    framrate: frameRate
+	    framerate: frameRate
 	  });
 	};
 
@@ -1829,6 +1829,7 @@
 	      this.updateSegmentPositions();
 	      this.updateShrimpPositions();
 	      this.updateCrabPosition();
+	      this.updateScorePosition();
 	    }
 	  }, {
 	    key: "updateBubblePositions",
@@ -1913,6 +1914,16 @@
 	        if (!crab.isPartiallyInMoveBounds()) this.game.removeCrab();
 	      }
 	    }
+	  }, {
+	    key: "updateScorePosition",
+	    value: function updateScorePosition() {
+	      var scores = this.board.scores;
+	      var scoreIdxsToRemove = [];
+	      scores.forEach(function (score, idx) {
+	        if (score.getAlpha() <= 0) scoreIdxsToRemove.push(idx);else score.updatePosition();
+	      });
+	      this.game.removeScores(scoreIdxsToRemove);
+	    }
 	  }]);
 	
 	  return PositionHandler;
@@ -1936,7 +1947,11 @@
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _game = __webpack_require__(2);
+	var _score = __webpack_require__(18);
+	
+	var _score2 = _interopRequireDefault(_score);
+	
+	var _scores = __webpack_require__(20);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -2077,8 +2092,9 @@
 	      for (var i = 0; i < sponges.length; i++) {
 	        if (beam.overlaps(sponges[i])) {
 	          sponges[i].handleHit();
-	          if (sponges[i].hits === 0) {
-	            this.game.incrementScore(_game.SPONGE_HIT_SCORE);
+	          if (sponges[i].hits <= 0) {
+	            this.game.incrementScore(_scores.SPONGE_HIT_SCORE);
+	            this.board.addScore(_score2.default.createScoreAboveObject(sponges[i], _scores.SPONGE_HIT_SCORE));
 	            this.soundHandler.playSeaSpongeDestroy();
 	            return i;
 	          } else {
@@ -2096,11 +2112,12 @@
 	      var segments = this.board.segments;
 	      for (var i = 0; i < segments.length; i++) {
 	        if (beam.overlaps(segments[i])) {
+	          var score = _scores.SEGMENT_HIT_SCORE;
 	          if (segments[i] instanceof _head2.default) {
-	            game.incrementScore(_game.HEAD_HIT_SCORE);
-	          } else {
-	            game.incrementScore(_game.SEGMENT_HIT_SCORE);
+	            score = _scores.HEAD_HIT_SCORE;
 	          }
+	          game.incrementScore(score);
+	          this.board.addScore(_score2.default.createScoreAboveObject(segments[i], score));
 	          this.soundHandler.playSegmentHit();
 	          return i;
 	        }
@@ -2113,13 +2130,14 @@
 	      var game = this.game;
 	      var crab = this.board.crab;
 	      if (crab && beam.overlaps(crab)) {
-	        if (crab.getY() > 500) {
-	          game.incrementScore(_game.CRAB_HIT_SCORE_CLOSE);
-	        } else if (crab.getY() > 400) {
-	          game.incrementScore(_game.CRAB_HIT_SCORE_MIDDLE);
-	        } else {
-	          game.incrementScore(_game.CRAB_HIT_SCORE_FAR);
+	        var score = _scores.CRAB_HIT_SCORE_FAR;
+	        if (crab.getY() <= 500 && crab.getY() > 400) {
+	          score = _scores.CRAB_HIT_SCORE_MIDDLE;
+	        } else if (crab.getY() > 500) {
+	          score = _scores.CRAB_HIT_SCORE_CLOSE;
 	        }
+	        game.incrementScore(score);
+	        this.board.addScore(_score2.default.createScoreAboveObject(crab, score));
 	        this.soundHandler.playCrabHit();
 	        return true;
 	      }
@@ -2131,7 +2149,8 @@
 	      var shrimp = this.board.shrimp;
 	      for (var i = 0; i < shrimp.length; i++) {
 	        if (beam.overlaps(shrimp[i])) {
-	          this.game.incrementScore(_game.SHRIMP_HIT_SCORE);
+	          this.game.incrementScore(_scores.SHRIMP_HIT_SCORE);
+	          this.board.addScore(_score2.default.createScoreAboveObject(shrimp[i], _scores.SHRIMP_HIT_SCORE));
 	          this.soundHandler.playShrimpHit();
 	          return i;
 	        }
@@ -2159,33 +2178,43 @@
 	        }
 	
 	        if (game.started) {
-	          if (crab) {
-	            if (explosion.overlaps(crab)) {
-	              game.removeCrab();
-	              game.incrementScore(_game.CRAB_HIT_SCORE_CLOSE / 2);
-	            }
-	          }
-	          sponges.forEach(function (sponge, idx) {
-	            if (explosion.overlaps(sponge)) {
-	              spongeIdxsToRemove.push(idx);
-	            }
-	          });
-	          segments.forEach(function (segment, idx) {
-	            if (explosion.overlaps(segment)) {
-	              segmentIdxsToRemove.push(idx);
-	              if (segment instanceof _head2.default) {
-	                game.incrementScore(_game.HEAD_HIT_SCORE / 2);
-	              } else {
-	                game.incrementScore(_game.SEGMENT_HIT_SCORE / 2);
+	          (function () {
+	            var score = void 0;
+	
+	            if (crab) {
+	              if (explosion.overlaps(crab)) {
+	                score = _scores.CRAB_HIT_SCORE_CLOSE / 2;
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(crab, score));
+	                game.incrementScore(score);
+	                game.removeCrab();
 	              }
 	            }
-	          });
-	          shrimps.forEach(function (shrimp, idx) {
-	            if (explosion.overlaps(shrimp)) {
-	              shrimpIdxsToRemove.push(idx);
-	              game.incrementScore(_game.SHRIMP_HIT_SCORE / 2);
-	            }
-	          });
+	            sponges.forEach(function (sponge, idx) {
+	              if (explosion.overlaps(sponge)) {
+	                spongeIdxsToRemove.push(idx);
+	              }
+	            });
+	            segments.forEach(function (segment, idx) {
+	              if (explosion.overlaps(segment)) {
+	                segmentIdxsToRemove.push(idx);
+	                if (segment instanceof _head2.default) {
+	                  score = _scores.HEAD_HIT_SCORE / 2;
+	                } else {
+	                  score = _scores.SEGMENT_HIT_SCORE / 2;
+	                }
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(segment, score));
+	                game.incrementScore(score);
+	              }
+	            });
+	            shrimps.forEach(function (shrimp, idx) {
+	              if (explosion.overlaps(shrimp)) {
+	                shrimpIdxsToRemove.push(idx);
+	                score = _scores.SHRIMP_HIT_SCORE / 2;
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(shrimp, score));
+	                game.incrementScore(score);
+	              }
+	            });
+	          })();
 	        }
 	      });
 	
@@ -2421,7 +2450,9 @@
 	        this.setX(this.prev.getX() - this.getWidth());
 	        this.setY(this.prev.getY());
 	      } else {
-	        this.changeX(this.velocityX);
+	        var x = this.getX() + this.velocityX;
+	        x = Math.ceil(x / this.getWidth()) * this.getWidth();
+	        this.setX(x);
 	        var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
 	        this.changeY(vertChange);
 	      }
@@ -2435,7 +2466,9 @@
 	        this.setX(this.prev.getX() + this.prev.getWidth());
 	        this.setY(this.prev.getY());
 	      } else {
-	        this.changeX(-this.velocityX);
+	        var x = this.getX() - this.velocityX;
+	        x = Math.floor(x / this.getWidth()) * this.getWidth();
+	        this.setX(x);
 	        var vertChange = this.verticalDirection === _moving_object.DOWN ? VELOCITY_Y : -VELOCITY_Y;
 	        this.changeY(vertChange);
 	      }
@@ -2482,7 +2515,301 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _tone = __webpack_require__(19);
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _moving_object = __webpack_require__(11);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _score_sprite_sheets = __webpack_require__(19);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SCORE_HEIGHT = 13;
+	
+	var SCORE_SHEETS = {
+	  1: (0, _score_sprite_sheets.createScore1SpriteSheet)(),
+	  5: (0, _score_sprite_sheets.createScore5SpriteSheet)(),
+	  10: (0, _score_sprite_sheets.createScore10SpriteSheet)(),
+	  50: (0, _score_sprite_sheets.createScore50SpriteSheet)(),
+	  100: (0, _score_sprite_sheets.createScore100SpriteSheet)(),
+	  150: (0, _score_sprite_sheets.createScore150SpriteSheet)(),
+	  200: (0, _score_sprite_sheets.createScore200SpriteSheet)(),
+	  300: (0, _score_sprite_sheets.createScore300SpriteSheet)(),
+	  600: (0, _score_sprite_sheets.createScore600SpriteSheet)(),
+	  900: (0, _score_sprite_sheets.createScore900SpriteSheet)()
+	};
+	
+	var Score = function (_MovingObject) {
+	  _inherits(Score, _MovingObject);
+	
+	  function Score(options) {
+	    _classCallCheck(this, Score);
+	
+	    var score = options.score || 1;
+	    var scoreSprite = new _createjs2.default.Sprite(SCORE_SHEETS[score], 'default');
+	    var width = Score.scoreWidth(score);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: width,
+	      height: SCORE_HEIGHT,
+	      direction: _moving_object.UP,
+	      velocityY: -.25,
+	      sprite: scoreSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Score.__proto__ || Object.getPrototypeOf(Score)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.score = options.score;
+	    return _this;
+	  }
+	
+	  _createClass(Score, [{
+	    key: 'getAlpha',
+	    value: function getAlpha() {
+	      return this.sprite.alpha;
+	    }
+	  }, {
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      _moving_object2.default.prototype.updatePosition.call(this);
+	      this.sprite.alpha -= .025;
+	    }
+	  }], [{
+	    key: 'createScoreAboveObject',
+	    value: function createScoreAboveObject(gameObject, score) {
+	      var x = gameObject.getCenterX() - Score.scoreWidth(score) / 2;
+	      var y = gameObject.getY() - (SCORE_HEIGHT + 4);
+	      return new Score({
+	        x: x,
+	        y: y,
+	        score: score
+	      });
+	    }
+	  }, {
+	    key: 'scoreWidth',
+	    value: function scoreWidth(score) {
+	      var width = 8;
+	      if (score >= 10) width = 18;
+	      if (score >= 100) width = 28;
+	      return width;
+	    }
+	  }]);
+	
+	  return Score;
+	}(_moving_object2.default);
+	
+	exports.default = Score;
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.createScore900SpriteSheet = exports.createScore600SpriteSheet = exports.createScore300SpriteSheet = exports.createScore200SpriteSheet = exports.createScore150SpriteSheet = exports.createScore100SpriteSheet = exports.createScore50SpriteSheet = exports.createScore10SpriteSheet = exports.createScore5SpriteSheet = exports.createScore1SpriteSheet = undefined;
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var createScore1SpriteSheet = exports.createScore1SpriteSheet = function createScore1SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 8,
+	      height: 13
+	    },
+	    images: ['./assets/scores/1.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore5SpriteSheet = exports.createScore5SpriteSheet = function createScore5SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 8,
+	      height: 13
+	    },
+	    images: ['./assets/scores/5.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore10SpriteSheet = exports.createScore10SpriteSheet = function createScore10SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 18,
+	      height: 13
+	    },
+	    images: ['./assets/scores/10.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore50SpriteSheet = exports.createScore50SpriteSheet = function createScore50SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 18,
+	      height: 13
+	    },
+	    images: ['./assets/scores/50.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore100SpriteSheet = exports.createScore100SpriteSheet = function createScore100SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 28,
+	      height: 13
+	    },
+	    images: ['./assets/scores/100.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore150SpriteSheet = exports.createScore150SpriteSheet = function createScore150SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 28,
+	      height: 13
+	    },
+	    images: ['./assets/scores/150.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore200SpriteSheet = exports.createScore200SpriteSheet = function createScore200SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 28,
+	      height: 13
+	    },
+	    images: ['./assets/scores/200.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore300SpriteSheet = exports.createScore300SpriteSheet = function createScore300SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 28,
+	      height: 13
+	    },
+	    images: ['./assets/scores/300.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore600SpriteSheet = exports.createScore600SpriteSheet = function createScore600SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 28,
+	      height: 13
+	    },
+	    images: ['./assets/scores/600.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+	
+	var createScore900SpriteSheet = exports.createScore900SpriteSheet = function createScore900SpriteSheet() {
+	  var frameRate = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _sprite_sheets.ANIMATION_RATE;
+	  return new _createjs2.default.SpriteSheet({
+	    frames: {
+	      width: 28,
+	      height: 13
+	    },
+	    images: ['./assets/scores/900.png'],
+	    animations: {
+	      default: 0
+	    },
+	    framerate: frameRate
+	  });
+	};
+
+/***/ },
+/* 20 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
+	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
+	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
+	var CRAB_HIT_SCORE_CLOSE = exports.CRAB_HIT_SCORE_CLOSE = 300;
+	var CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_MIDDLE = 600;
+	var CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_FAR = 900;
+	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _tone = __webpack_require__(22);
 	
 	var _tone2 = _interopRequireDefault(_tone);
 	
@@ -2757,7 +3084,7 @@
 	exports.default = SoundHandler;
 
 /***/ },
-/* 19 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function(root, factory){
@@ -24680,7 +25007,7 @@
 	}));
 
 /***/ },
-/* 20 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24717,15 +25044,15 @@
 	
 	var _moving_object = __webpack_require__(11);
 	
-	var _sea_sponge = __webpack_require__(21);
+	var _sea_sponge = __webpack_require__(25);
 	
 	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
 	
-	var _crab = __webpack_require__(25);
+	var _crab = __webpack_require__(26);
 	
 	var _crab2 = _interopRequireDefault(_crab);
 	
-	var _shrimp = __webpack_require__(23);
+	var _shrimp = __webpack_require__(27);
 	
 	var _shrimp2 = _interopRequireDefault(_shrimp);
 	
@@ -24747,6 +25074,7 @@
 	    this.sponges = [];
 	    this.shrimp = [];
 	    this.crab = null;
+	    this.scores = [];
 	
 	    this.setBackground();
 	  }
@@ -24762,6 +25090,7 @@
 	      this.removeAllSegments();
 	      this.removeAllShrimp();
 	      this.removeCrab();
+	      this.removeAllScores();
 	    }
 	  }, {
 	    key: 'addDiver',
@@ -24944,6 +25273,14 @@
 	      this.explosions.push(explosion);
 	    }
 	  }, {
+	    key: 'addScore',
+	    value: function addScore(score) {
+	      score.setStage(this.stage);
+	      this.stage.addChild(score.sprite);
+	      this.stage.setChildIndex(score.sprite, this.stage.getNumChildren() - 1);
+	      this.scores.push(score);
+	    }
+	  }, {
 	    key: 'fireLaser',
 	    value: function fireLaser() {
 	      this.addLaserBeam(this.diver.fireLaser());
@@ -25085,6 +25422,25 @@
 	      this.explosions = [];
 	    }
 	  }, {
+	    key: 'removeScoreAtIdx',
+	    value: function removeScoreAtIdx(idx) {
+	      var score = this.scores[idx];
+	      this.stage.removeChild(score.sprite);
+	      score.destroy();
+	      this.scores.splice(idx, 1);
+	    }
+	  }, {
+	    key: 'removeAllScores',
+	    value: function removeAllScores() {
+	      var _this8 = this;
+	
+	      this.scores.forEach(function (score) {
+	        _this8.stage.removeChild(score.sprite);
+	        score.destroy();
+	      });
+	      this.scores = [];
+	    }
+	  }, {
 	    key: 'pauseAnimations',
 	    value: function pauseAnimations(paused) {
 	      this.segments.forEach(function (segment) {
@@ -25102,7 +25458,96 @@
 	exports.default = Board;
 
 /***/ },
-/* 21 */
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.BUBBLE_SIZES = exports.BUBBLE_LARGE = exports.BUBBLE_MEDIUM = exports.BUBBLE_SMALL = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _BUBBLE_SHEETS, _BUBBLE_DIAMETERS, _BUBBLE_VELOCITIES;
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _moving_object = __webpack_require__(11);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+	
+	var BUBBLE_SMALL = exports.BUBBLE_SMALL = 'BUBBLE_SMALL';
+	var BUBBLE_MEDIUM = exports.BUBBLE_MEDIUM = 'BUBBLE_MEDIUM';
+	var BUBBLE_LARGE = exports.BUBBLE_LARGE = 'BUBBLE_LARGE';
+	
+	var BUBBLE_SIZES = exports.BUBBLE_SIZES = [BUBBLE_SMALL, BUBBLE_MEDIUM, BUBBLE_LARGE];
+	
+	var SMALL_BUBBLE_SHEET = (0, _sprite_sheets.createSmallBubbleSpriteSheet)();
+	var MEDIUM_BUBBLE_SHEET = (0, _sprite_sheets.createMediumBubbleSpriteSheet)();
+	var LARGE_BUBBLE_SHEET = (0, _sprite_sheets.createLargeBubbleSpriteSheet)();
+	
+	var BUBBLE_SHEETS = (_BUBBLE_SHEETS = {}, _defineProperty(_BUBBLE_SHEETS, BUBBLE_SMALL, SMALL_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_MEDIUM, MEDIUM_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_LARGE, LARGE_BUBBLE_SHEET), _BUBBLE_SHEETS);
+	
+	var BUBBLE_DIAMETERS = (_BUBBLE_DIAMETERS = {}, _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_SMALL, 16), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_MEDIUM, 32), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_LARGE, 64), _BUBBLE_DIAMETERS);
+	
+	var BUBBLE_VELOCITIES = (_BUBBLE_VELOCITIES = {}, _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_SMALL, -.5), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_MEDIUM, -.75), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_LARGE, -1), _BUBBLE_VELOCITIES);
+	
+	var Bubble = function (_MovingObject) {
+	  _inherits(Bubble, _MovingObject);
+	
+	  function Bubble(options) {
+	    _classCallCheck(this, Bubble);
+	
+	    var bubbleSize = options.bubbleSize || BUBBLE_SMALL;
+	    var bubbleSprite = new _createjs2.default.Sprite(BUBBLE_SHEETS[bubbleSize], 'default');
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: BUBBLE_DIAMETERS[bubbleSize],
+	      height: BUBBLE_DIAMETERS[bubbleSize],
+	      direction: _moving_object.UP,
+	      velocityY: BUBBLE_VELOCITIES[bubbleSize],
+	      velocityX: .5,
+	      sprite: bubbleSprite
+	    };
+	
+	    return _possibleConstructorReturn(this, (Bubble.__proto__ || Object.getPrototypeOf(Bubble)).call(this, Object.assign(defaultOptions, options)));
+	  }
+	
+	  _createClass(Bubble, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      if (Math.random() <= .005) {
+	        this.velocityX = -this.velocityX;
+	      }
+	      _moving_object2.default.prototype.updatePosition.call(this);
+	    }
+	  }]);
+	
+	  return Bubble;
+	}(_moving_object2.default);
+	
+	exports.default = Bubble;
+
+/***/ },
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -25185,170 +25630,7 @@
 	exports.default = SeaSponge;
 
 /***/ },
-/* 22 */,
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.SHRIMP_MIN_VELOCITY = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _util = __webpack_require__(5);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _moving_object2 = _interopRequireDefault(_moving_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _sea_sponge = __webpack_require__(21);
-	
-	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var SHRIMP_MIN_VELOCITY = exports.SHRIMP_MIN_VELOCITY = 6;
-	
-	var SHRIMP_SHEET = (0, _sprite_sheets.createShrimpSpriteSheet)();
-	
-	var Shrimp = function (_MovingObject) {
-	  _inherits(Shrimp, _MovingObject);
-	
-	  function Shrimp() {
-	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-	
-	    _classCallCheck(this, Shrimp);
-	
-	    var shrimpSprite = new _createjs2.default.Sprite(SHRIMP_SHEET);
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: 16,
-	      height: 20,
-	      sprite: shrimpSprite
-	    };
-	
-	    return _possibleConstructorReturn(this, (Shrimp.__proto__ || Object.getPrototypeOf(Shrimp)).call(this, Object.assign(defaultOptions, options)));
-	  }
-	
-	  _createClass(Shrimp, [{
-	    key: 'dropSeaSponge',
-	    value: function dropSeaSponge() {
-	      return new _sea_sponge2.default({ x: this.getX(), y: this.getY(), snap: true });
-	    }
-	  }]);
-	
-	  return Shrimp;
-	}(_moving_object2.default);
-	
-	exports.default = Shrimp;
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.BUBBLE_SIZES = exports.BUBBLE_LARGE = exports.BUBBLE_MEDIUM = exports.BUBBLE_SMALL = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _BUBBLE_SHEETS, _BUBBLE_DIAMETERS, _BUBBLE_VELOCITIES;
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _moving_object2 = _interopRequireDefault(_moving_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-	
-	var BUBBLE_SMALL = exports.BUBBLE_SMALL = 'BUBBLE_SMALL';
-	var BUBBLE_MEDIUM = exports.BUBBLE_MEDIUM = 'BUBBLE_MEDIUM';
-	var BUBBLE_LARGE = exports.BUBBLE_LARGE = 'BUBBLE_LARGE';
-	var BUBBLE_SIZES = exports.BUBBLE_SIZES = [BUBBLE_SMALL, BUBBLE_MEDIUM, BUBBLE_LARGE];
-	
-	var SMALL_BUBBLE_SHEET = (0, _sprite_sheets.createSmallBubbleSpriteSheet)();
-	var MEDIUM_BUBBLE_SHEET = (0, _sprite_sheets.createMediumBubbleSpriteSheet)();
-	var LARGE_BUBBLE_SHEET = (0, _sprite_sheets.createLargeBubbleSpriteSheet)();
-	
-	var BUBBLE_SHEETS = (_BUBBLE_SHEETS = {}, _defineProperty(_BUBBLE_SHEETS, BUBBLE_SMALL, SMALL_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_MEDIUM, MEDIUM_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_LARGE, LARGE_BUBBLE_SHEET), _BUBBLE_SHEETS);
-	
-	var BUBBLE_DIAMETERS = (_BUBBLE_DIAMETERS = {}, _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_SMALL, 16), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_MEDIUM, 32), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_LARGE, 64), _BUBBLE_DIAMETERS);
-	
-	var BUBBLE_VELOCITIES = (_BUBBLE_VELOCITIES = {}, _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_SMALL, -.5), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_MEDIUM, -.75), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_LARGE, -1), _BUBBLE_VELOCITIES);
-	
-	var Bubble = function (_MovingObject) {
-	  _inherits(Bubble, _MovingObject);
-	
-	  function Bubble(options) {
-	    _classCallCheck(this, Bubble);
-	
-	    var bubbleSize = options.bubbleSize || BUBBLE_SMALL;
-	    var bubbleSprite = new _createjs2.default.Sprite(BUBBLE_SHEETS[bubbleSize], 'default');
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: BUBBLE_DIAMETERS[bubbleSize],
-	      height: BUBBLE_DIAMETERS[bubbleSize],
-	      direction: _moving_object.UP,
-	      velocityY: BUBBLE_VELOCITIES[bubbleSize],
-	      velocityX: .5,
-	      sprite: bubbleSprite
-	    };
-	
-	    return _possibleConstructorReturn(this, (Bubble.__proto__ || Object.getPrototypeOf(Bubble)).call(this, Object.assign(defaultOptions, options)));
-	  }
-	
-	  _createClass(Bubble, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      if (Math.random() <= .005) {
-	        this.velocityX = -this.velocityX;
-	      }
-	      _moving_object2.default.prototype.updatePosition.call(this);
-	    }
-	  }]);
-	
-	  return Bubble;
-	}(_moving_object2.default);
-	
-	exports.default = Bubble;
-
-/***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -25458,6 +25740,80 @@
 	}(_moving_object2.default);
 	
 	exports.default = Crab;
+
+/***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.SHRIMP_MIN_VELOCITY = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(5);
+	
+	var _moving_object = __webpack_require__(11);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _sea_sponge = __webpack_require__(25);
+	
+	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SHRIMP_MIN_VELOCITY = exports.SHRIMP_MIN_VELOCITY = 6;
+	
+	var SHRIMP_SHEET = (0, _sprite_sheets.createShrimpSpriteSheet)();
+	
+	var Shrimp = function (_MovingObject) {
+	  _inherits(Shrimp, _MovingObject);
+	
+	  function Shrimp() {
+	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	
+	    _classCallCheck(this, Shrimp);
+	
+	    var shrimpSprite = new _createjs2.default.Sprite(SHRIMP_SHEET);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 16,
+	      height: 20,
+	      sprite: shrimpSprite
+	    };
+	
+	    return _possibleConstructorReturn(this, (Shrimp.__proto__ || Object.getPrototypeOf(Shrimp)).call(this, Object.assign(defaultOptions, options)));
+	  }
+	
+	  _createClass(Shrimp, [{
+	    key: 'dropSeaSponge',
+	    value: function dropSeaSponge() {
+	      return new _sea_sponge2.default({ x: this.getX(), y: this.getY(), snap: true });
+	    }
+	  }]);
+	
+	  return Shrimp;
+	}(_moving_object2.default);
+	
+	exports.default = Shrimp;
 
 /***/ }
 /******/ ]);
