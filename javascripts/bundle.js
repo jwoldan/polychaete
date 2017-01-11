@@ -151,6 +151,7 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var HIGH_SCORE_COOKIE = 'polychaete-high-score';
+	var MUTE_COOKIE = 'polychate-mute';
 	var INITIAL_BOMB_COUNT = 1;
 	var MAX_BOMB_COUNT = 3;
 	var NEXT_BOMB_INCREMENT = 2500;
@@ -171,6 +172,8 @@
 	
 	    var cookieHighScore = _jsCookie2.default.get(HIGH_SCORE_COOKIE);
 	    this.updateHighScore(cookieHighScore ? parseInt(cookieHighScore) : 0);
+	    var muteCookie = _jsCookie2.default.get(MUTE_COOKIE);
+	    if (muteCookie) this.uiHandler.toggleMute();
 	
 	    this.keyHandler.attachListeners();
 	    this.board.addBubbles(20);
@@ -419,6 +422,13 @@
 	      _createjs2.default.Ticker.paused = paused;
 	      this.board.pauseAnimations(paused);
 	      this.soundHandler.pause(paused);
+	    }
+	  }, {
+	    key: 'toggleMute',
+	    value: function toggleMute() {
+	      var mute = this.soundHandler.toggleMute();
+	      _jsCookie2.default.set(MUTE_COOKIE, mute);
+	      return mute;
 	    }
 	  }, {
 	    key: 'endGame',
@@ -3238,14 +3248,17 @@
 	    this.aboutPopup = document.getElementById('popup-about');
 	    this.aboutButton = document.getElementById('button-about');
 	    this.aboutCloseButton = document.getElementById('button-about-close');
+	    this.muteButton = document.getElementById('button-mute');
 	
 	    this.startGame = this.startGame.bind(this);
 	    this.toggleAboutPopup = this.toggleAboutPopup.bind(this);
+	    this.toggleMute = this.toggleMute.bind(this);
 	
 	    this.startButton.addEventListener('click', this.startGame);
 	    this.restartButton.addEventListener('click', this.startGame);
 	    this.aboutButton.addEventListener('click', this.toggleAboutPopup);
 	    this.aboutCloseButton.addEventListener('click', this.toggleAboutPopup);
+	    this.muteButton.addEventListener('click', this.toggleMute);
 	  }
 	
 	  _createClass(UIHandler, [{
@@ -3297,6 +3310,16 @@
 	      } else {
 	        this.game.setPaused(true);
 	        this.aboutPopup.className = "popup";
+	      }
+	    }
+	  }, {
+	    key: 'toggleMute',
+	    value: function toggleMute() {
+	      var mute = this.game.toggleMute();
+	      if (mute) {
+	        this.muteButton.innerText = "Unmute Sounds";
+	      } else {
+	        this.muteButton.innerText = "Mute Sounds";
 	      }
 	    }
 	  }, {
@@ -3782,6 +3805,12 @@
 	    value: function pause(paused) {
 	      this.pauseTransport(paused);
 	      this.pauseShrimpOscillator(paused);
+	    }
+	  }, {
+	    key: 'toggleMute',
+	    value: function toggleMute() {
+	      _tone2.default.Master.mute = !_tone2.default.Master.mute;
+	      return _tone2.default.Master.mute;
 	    }
 	  }, {
 	    key: 'reset',
