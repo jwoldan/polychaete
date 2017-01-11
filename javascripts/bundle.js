@@ -50,15 +50,15 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _game = __webpack_require__(28);
+	var _game = __webpack_require__(2);
 	
 	var _game2 = _interopRequireDefault(_game);
 	
-	var _head = __webpack_require__(16);
+	var _head = __webpack_require__(8);
 	
 	var _head2 = _interopRequireDefault(_head);
 	
-	var _segment = __webpack_require__(17);
+	var _segment = __webpack_require__(9);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
@@ -81,7 +81,367 @@
 	module.exports = createjs;
 
 /***/ },
-/* 2 */,
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _jsCookie = __webpack_require__(3);
+	
+	var _jsCookie2 = _interopRequireDefault(_jsCookie);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _util = __webpack_require__(5);
+	
+	var _position_handler = __webpack_require__(6);
+	
+	var _position_handler2 = _interopRequireDefault(_position_handler);
+	
+	var _collision_handler = __webpack_require__(7);
+	
+	var _collision_handler2 = _interopRequireDefault(_collision_handler);
+	
+	var _board = __webpack_require__(19);
+	
+	var _board2 = _interopRequireDefault(_board);
+	
+	var _ui_handler = __webpack_require__(24);
+	
+	var _ui_handler2 = _interopRequireDefault(_ui_handler);
+	
+	var _key_handler = __webpack_require__(25);
+	
+	var _key_handler2 = _interopRequireDefault(_key_handler);
+	
+	var _sound_handler = __webpack_require__(26);
+	
+	var _sound_handler2 = _interopRequireDefault(_sound_handler);
+	
+	var _bubble = __webpack_require__(20);
+	
+	var _bubble2 = _interopRequireDefault(_bubble);
+	
+	var _head = __webpack_require__(8);
+	
+	var _head2 = _interopRequireDefault(_head);
+	
+	var _segment = __webpack_require__(9);
+	
+	var _sea_sponge = __webpack_require__(21);
+	
+	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	var _crab = __webpack_require__(22);
+	
+	var _shrimp = __webpack_require__(23);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var HIGH_SCORE_COOKIE = 'polychaete-high-score';
+	var INITIAL_BOMB_COUNT = 1;
+	var MAX_BOMB_COUNT = 3;
+	var NEXT_BOMB_INCREMENT = 2500;
+	
+	var Game = function () {
+	  function Game(options) {
+	    _classCallCheck(this, Game);
+	
+	    this.stage = options.stage;
+	    this.board = new _board2.default(options);
+	    this.uiHandler = new _ui_handler2.default(this);
+	    this.keyHandler = new _key_handler2.default(this);
+	    this.soundHandler = new _sound_handler2.default();
+	    this.positionHandler = new _position_handler2.default(this);
+	    this.collisionHandler = new _collision_handler2.default(this);
+	    this.initialStartLength = options.initialStartLength || 12;
+	    this.started = false;
+	
+	    var cookieHighScore = _jsCookie2.default.get(HIGH_SCORE_COOKIE);
+	    this.updateHighScore(cookieHighScore ? parseInt(cookieHighScore) : 0);
+	
+	    this.keyHandler.attachListeners();
+	    this.board.addBubbles(20);
+	
+	    this.tick = this.tick.bind(this);
+	  }
+	
+	  _createClass(Game, [{
+	    key: 'initialize',
+	    value: function initialize(startGame) {
+	      this.startLength = this.initialStartLength;
+	      this.level = 0;
+	      this.currentScore = 0;
+	      this.newHighScore = false;
+	      this.uiHandler.updateCurrentScore(this.currentScore);
+	      this.bombCount = INITIAL_BOMB_COUNT;
+	      this.nextBombScore = NEXT_BOMB_INCREMENT;
+	      this.uiHandler.updateBombCount(this.bombCount);
+	
+	      var board = this.board;
+	      board.reset();
+	      if (startGame) {
+	        board.addDiver();
+	        this.started = true;
+	        this.soundHandler.pause(false);
+	      }
+	      board.addSeaSponges(30);
+	      board.addPolychaete(this.startLength, _segment.INITIAL_VELOCITY_X);
+	
+	      this.paused = false;
+	      _createjs2.default.Ticker.paused = false;
+	    }
+	  }, {
+	    key: 'run',
+	    value: function run() {
+	      _createjs2.default.Ticker.setFPS(_sprite_sheets.FPS);
+	      _createjs2.default.Ticker.on("tick", this.stage);
+	      _createjs2.default.Ticker.on("tick", this.tick);
+	    }
+	  }, {
+	    key: 'tick',
+	    value: function tick(e) {
+	      this.keyHandler.handleTick(e);
+	      this.collisionHandler.checkCollisions(e);
+	      this.positionHandler.updatePositions(e);
+	      this.playSegmentStep(e);
+	      this.tickBombs(e);
+	      this.tickExplosions(e);
+	      this.tryAddBubble(e);
+	      this.tryAddCrab(e);
+	      this.tryAddShrimp(e);
+	      this.checkSounds();
+	    }
+	  }, {
+	    key: 'moveDiver',
+	    value: function moveDiver(xDiff, yDiff) {
+	      if (!this.started || this.paused) return;
+	
+	      var board = this.board;
+	      var diver = board.diver;
+	      var blocked = false;
+	      diver.changeBoundedPos(xDiff, yDiff);
+	      board.sponges.forEach(function (sponge) {
+	        if (sponge.overlaps(diver)) {
+	          blocked = true;
+	        }
+	      });
+	      if (blocked) diver.changeBoundedPos(-xDiff, -yDiff);
+	    }
+	  }, {
+	    key: 'fireLaser',
+	    value: function fireLaser() {
+	      if (!this.started || this.paused) return;
+	      this.board.fireLaser();
+	      this.soundHandler.playLaserSound();
+	    }
+	  }, {
+	    key: 'incrementBombCount',
+	    value: function incrementBombCount() {
+	      if (this.bombCount < MAX_BOMB_COUNT) {
+	        this.uiHandler.updateBombCount(++this.bombCount);
+	        this.soundHandler.playBombIncrement();
+	      }
+	    }
+	  }, {
+	    key: 'dropBomb',
+	    value: function dropBomb() {
+	      if (!this.started || this.paused) return;
+	      if (this.bombCount > 0) {
+	        this.board.dropBomb();
+	        this.uiHandler.updateBombCount(--this.bombCount);
+	      }
+	    }
+	  }, {
+	    key: 'playSegmentStep',
+	    value: function playSegmentStep(e) {
+	      if (e.paused) return;
+	      var segments = this.board.segments;
+	      if (segments.length > 0 && this.started) {
+	        var maxVelocity = segments.reduce(function (a, b) {
+	          return a.velocityX > b.velocityX ? a.velocityX : b.velocityX;
+	        }, this);
+	        if (_createjs2.default.Ticker.getTicks() % Math.round(32 / maxVelocity) === 0) {
+	          this.soundHandler.playSegmentStep();
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'tickBombs',
+	    value: function tickBombs(e) {
+	      var _this = this;
+	
+	      if (e.paused) return;
+	      var bombIdxsToRemove = [];
+	      this.board.bombs.forEach(function (bomb, idx) {
+	        bomb.tickDown();
+	        if (bomb.ticks === 0) {
+	          _this.board.addExplosion(bomb.explode());
+	          bombIdxsToRemove.push(idx);
+	          _this.soundHandler.playExplosionNoise();
+	        }
+	      });
+	
+	      this.board.removeBombs(bombIdxsToRemove);
+	    }
+	  }, {
+	    key: 'tickExplosions',
+	    value: function tickExplosions(e) {
+	      if (e.paused) return;
+	      var explosionIdxsToRemove = [];
+	      this.board.explosions.forEach(function (explosion, idx) {
+	        explosion.tickDown();
+	        if (explosion.ticks === 0) {
+	          explosionIdxsToRemove.push(idx);
+	        }
+	      });
+	
+	      this.board.removeExplosions(explosionIdxsToRemove);
+	    }
+	  }, {
+	    key: 'tryAddBubble',
+	    value: function tryAddBubble(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (_createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
+	        var x = this.stage.canvas.width * Math.random();
+	        var y = this.stage.canvas.height;
+	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
+	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
+	        board.addBubble(bubble);
+	      }
+	    }
+	  }, {
+	    key: 'tryAddPolychaete',
+	    value: function tryAddPolychaete() {
+	      var _this2 = this;
+	
+	      var board = this.board;
+	
+	      if (board.segments.length === 0) {
+	        (function () {
+	          _this2.startLength -= 1;
+	          if (_this2.startLength === 0) {
+	            _this2.startLength = _this2.initialStartLength;
+	          }
+	          if (_this2.level < 6 && _this2.startLength % 3 === 0) {
+	            _this2.level += 1;
+	            _this2.soundHandler.incrementBPM(10);
+	          }
+	          var velocityX = _segment.INITIAL_VELOCITY_X + _this2.level;
+	          board.addPolychaete(_this2.startLength, velocityX);
+	          if (_this2.startLength !== _this2.initialStartLength) {
+	            window.setTimeout(function () {
+	              board.addPolychaete(1, velocityX + 1);
+	            }, Math.random() * 1000 + 500);
+	          }
+	        })();
+	      }
+	    }
+	  }, {
+	    key: 'tryAddCrab',
+	    value: function tryAddCrab(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (this.started && !board.crab && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
+	        var random = (0, _util.getRandomInt)(0, 8);
+	        if (random <= this.level) {
+	          board.addCrab({
+	            maximumVelocity: _crab.CRAB_MIN_VELOCITY + 2 * this.level
+	          });
+	          this.soundHandler.startCrabSequence();
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'tryAddShrimp',
+	    value: function tryAddShrimp(e) {
+	      if (e.paused) return;
+	      var board = this.board;
+	      if (this.started && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === _sprite_sheets.FPS / 4) {
+	        var random = (0, _util.getRandomInt)(0, 8);
+	        if (random <= this.level) {
+	          board.addShrimp({
+	            velocityY: _shrimp.SHRIMP_MIN_VELOCITY + this.level
+	          });
+	          this.soundHandler.startShrimpOscillator(this.level);
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'checkSounds',
+	    value: function checkSounds() {
+	      if (this.soundHandler.shrimpOscillatorPlaying && this.board.shrimp.length === 0) {
+	        this.soundHandler.stopShrimpOscillator();
+	      }
+	      if (this.soundHandler.crabSequencePlaying && !this.board.crab) {
+	        this.soundHandler.stopCrabSequence();
+	      }
+	    }
+	  }, {
+	    key: 'incrementScore',
+	    value: function incrementScore(addlScore) {
+	      this.currentScore += addlScore;
+	      this.uiHandler.updateCurrentScore(this.currentScore);
+	
+	      if (this.currentScore >= this.nextBombScore) {
+	        this.incrementBombCount();
+	        this.nextBombScore += NEXT_BOMB_INCREMENT;
+	      }
+	
+	      if (this.currentScore > this.highScore) {
+	        this.updateHighScore(this.currentScore);
+	      }
+	    }
+	  }, {
+	    key: 'updateHighScore',
+	    value: function updateHighScore(newHighScore) {
+	      this.highScore = newHighScore;
+	      this.uiHandler.updateHighScore(this.highScore);
+	      this.newHighScore = true;
+	    }
+	  }, {
+	    key: 'setPaused',
+	    value: function setPaused(paused) {
+	      this.paused = paused;
+	      _createjs2.default.Ticker.paused = paused;
+	      this.board.pauseAnimations(paused);
+	      this.soundHandler.pause(paused);
+	    }
+	  }, {
+	    key: 'endGame',
+	    value: function endGame() {
+	      var _this3 = this;
+	
+	      this.soundHandler.reset();
+	      this.setPaused(true);
+	      this.soundHandler.resetBPM();
+	      this.started = false;
+	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
+	      window.setTimeout(function () {
+	        return _this3.uiHandler.showGameOverPopup(_this3.newHighScore);
+	      }, 100);
+	    }
+	  }]);
+	
+	  return Game;
+	}();
+	
+	exports.default = Game;
+
+/***/ },
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -483,395 +843,6 @@
 /* 6 */
 /***/ function(module, exports) {
 
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var UIHandler = function () {
-	  function UIHandler(game) {
-	    _classCallCheck(this, UIHandler);
-	
-	    this.game = game;
-	    this.currentScoreElement = document.getElementById('current-score');
-	    this.highScoreElement = document.getElementById('high-score');
-	    this.bombCountElement = document.getElementById('bomb-count');
-	    this.startGamePopup = document.getElementById('popup-start');
-	    this.startButton = document.getElementById('button-start');
-	    this.gameOverPopup = document.getElementById('popup-gameover');
-	    this.restartButton = document.getElementById('button-restart');
-	    this.gameOverScore = document.getElementById('gameover-score');
-	    this.gameOverHighScoreMessage = document.getElementById('gameover-high-score-message');
-	    this.aboutPopup = document.getElementById('popup-about');
-	    this.aboutButton = document.getElementById('button-about');
-	    this.aboutCloseButton = document.getElementById('button-about-close');
-	
-	    this.startGame = this.startGame.bind(this);
-	    this.toggleAboutPopup = this.toggleAboutPopup.bind(this);
-	
-	    this.startButton.addEventListener('click', this.startGame);
-	    this.restartButton.addEventListener('click', this.startGame);
-	    this.aboutButton.addEventListener('click', this.toggleAboutPopup);
-	    this.aboutCloseButton.addEventListener('click', this.toggleAboutPopup);
-	  }
-	
-	  _createClass(UIHandler, [{
-	    key: 'updateCurrentScore',
-	    value: function updateCurrentScore(newCurrentScore) {
-	      if (this.currentScoreElement) {
-	        this.currentScoreElement.innerText = newCurrentScore;
-	      }
-	    }
-	  }, {
-	    key: 'updateHighScore',
-	    value: function updateHighScore(newHighScore) {
-	      if (this.highScoreElement) {
-	        this.highScoreElement.innerText = newHighScore;
-	      }
-	    }
-	  }, {
-	    key: 'updateBombCount',
-	    value: function updateBombCount(newBombCount) {
-	      if (this.bombCountElement) {
-	        this.bombCountElement.innerText = newBombCount;
-	      }
-	    }
-	  }, {
-	    key: 'hideStartGamePopup',
-	    value: function hideStartGamePopup() {
-	      this.startGamePopup.className = "popup hidden";
-	    }
-	  }, {
-	    key: 'showGameOverPopup',
-	    value: function showGameOverPopup(newHighScore) {
-	      this.gameOverPopup.className = "popup";
-	      this.gameOverScore.innerText = this.currentScoreElement.innerText;
-	      if (newHighScore) {
-	        this.gameOverHighScoreMessage.innerText = "New High Score!";
-	      }
-	    }
-	  }, {
-	    key: 'hideGameOverPopup',
-	    value: function hideGameOverPopup() {
-	      this.gameOverPopup.className = "popup hidden";
-	    }
-	  }, {
-	    key: 'toggleAboutPopup',
-	    value: function toggleAboutPopup() {
-	      if (this.aboutPopup.className === "popup") {
-	        this.game.setPaused(false);
-	        this.aboutPopup.className = "popup hidden";
-	      } else {
-	        this.game.setPaused(true);
-	        this.aboutPopup.className = "popup";
-	      }
-	    }
-	  }, {
-	    key: 'startGame',
-	    value: function startGame() {
-	      this.game.initialize(true);
-	      this.hideStartGamePopup();
-	      this.hideGameOverPopup();
-	    }
-	  }]);
-	
-	  return UIHandler;
-	}();
-	
-	exports.default = UIHandler;
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _diver = __webpack_require__(8);
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var KEYCODE_LEFT = 37,
-	    KEYCODE_A = 65,
-	    KEYCODE_RIGHT = 39,
-	    KEYCODE_D = 68,
-	    KEYCODE_UP = 38,
-	    KEYCODE_W = 87,
-	    KEYCODE_DOWN = 40,
-	    KEYCODE_S = 83,
-	    KEYCODE_SPACE = 32,
-	    KEYCODE_CMD_LEFT = 91,
-	    KEYCODE_CMD_RIGHT = 93,
-	    KEYCODE_CTRL = 17;
-	
-	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE];
-	
-	var BOMB_KEYS = new Set([KEYCODE_CMD_LEFT, KEYCODE_CMD_RIGHT, KEYCODE_CTRL]);
-	
-	var DIAG_MOVE_AMOUNT = Math.sqrt(_diver.DIVER_MOVE_AMOUNT * _diver.DIVER_MOVE_AMOUNT / 2);
-	var ACCELERATION_START = 0.25;
-	var ACCELERATION_INCREMENT = 0.25;
-	
-	var KeyHandler = function () {
-		function KeyHandler(game, stage) {
-			_classCallCheck(this, KeyHandler);
-	
-			this.game = game;
-			this.stage = stage;
-			this.reset();
-	
-			this.handleKeyDown = this.handleKeyDown.bind(this);
-			this.handleKeyUp = this.handleKeyUp.bind(this);
-			this.acceleration = ACCELERATION_START;
-		}
-	
-		_createClass(KeyHandler, [{
-			key: 'reset',
-			value: function reset() {
-				var _this = this;
-	
-				this.keysDown = {};
-				controlKeys.forEach(function (key) {
-					_this.keysDown[key] = false;
-				});
-			}
-		}, {
-			key: 'handleKeyDown',
-			value: function handleKeyDown(e) {
-				if (e.keyCode === KEYCODE_SPACE && !this.keysDown[e.keyCode]) {
-					this.game.fireLaser();
-				} else if (BOMB_KEYS.has(e.keyCode) && !this.keysDown[e.keyCode]) {
-					this.game.dropBomb();
-				}
-				if (controlKeys.includes(e.keyCode)) {
-					e.preventDefault();
-					this.keysDown[e.keyCode] = true;
-				}
-			}
-		}, {
-			key: 'handleKeyUp',
-			value: function handleKeyUp(e) {
-				if (controlKeys.includes(e.keyCode)) {
-					e.preventDefault();
-					this.keysDown[e.keyCode] = false;
-				}
-			}
-		}, {
-			key: 'handleTick',
-			value: function handleTick(e) {
-				if (e.paused) return;
-	
-				var diagMoveAmount = DIAG_MOVE_AMOUNT * this.acceleration;
-				var moveAmount = _diver.DIVER_MOVE_AMOUNT * this.acceleration;
-	
-				var move = false;
-				var diagMove = false;
-				if (this.leftUpPressed()) {
-					this.game.moveDiver(-diagMoveAmount, -diagMoveAmount);
-					diagMove = true;
-				}
-				if (this.rightUpPressed()) {
-					this.game.moveDiver(diagMoveAmount, -diagMoveAmount);
-					diagMove = true;
-				}
-				if (this.leftDownPressed()) {
-					this.game.moveDiver(-diagMoveAmount, diagMoveAmount);
-					diagMove = true;
-				}
-				if (this.rightDownPressed()) {
-					this.game.moveDiver(diagMoveAmount, diagMoveAmount);
-					diagMove = true;
-				}
-	
-				if (!diagMove) {
-					if (this.leftPressed()) {
-						this.game.moveDiver(-moveAmount, 0);
-						move = true;
-					}
-					if (this.rightPressed()) {
-						this.game.moveDiver(moveAmount, 0);
-						move = true;
-					}
-	
-					if (this.upPressed()) {
-						this.game.moveDiver(0, -moveAmount);
-						move = true;
-					}
-	
-					if (this.downPressed()) {
-						this.game.moveDiver(0, moveAmount);
-						move = true;
-					}
-				}
-	
-				if ((diagMove || move) && this.acceleration < 1) {
-					this.acceleration += ACCELERATION_INCREMENT;
-					if (this.acceleration > 1) this.acceleration = 1;
-				} else if (!diagMove && !move) {
-					this.acceleration = ACCELERATION_START;
-				}
-			}
-		}, {
-			key: 'leftPressed',
-			value: function leftPressed() {
-				return this.keysDown[KEYCODE_LEFT] || this.keysDown[KEYCODE_A];
-			}
-		}, {
-			key: 'rightPressed',
-			value: function rightPressed() {
-				return this.keysDown[KEYCODE_RIGHT] || this.keysDown[KEYCODE_D];
-			}
-		}, {
-			key: 'upPressed',
-			value: function upPressed() {
-				return this.keysDown[KEYCODE_UP] || this.keysDown[KEYCODE_W];
-			}
-		}, {
-			key: 'downPressed',
-			value: function downPressed() {
-				return this.keysDown[KEYCODE_DOWN] || this.keysDown[KEYCODE_S];
-			}
-		}, {
-			key: 'leftUpPressed',
-			value: function leftUpPressed() {
-				return this.leftPressed() && this.upPressed();
-			}
-		}, {
-			key: 'rightUpPressed',
-			value: function rightUpPressed() {
-				return this.rightPressed() && this.upPressed();
-			}
-		}, {
-			key: 'leftDownPressed',
-			value: function leftDownPressed() {
-				return this.leftPressed() && this.downPressed();
-			}
-		}, {
-			key: 'rightDownPressed',
-			value: function rightDownPressed() {
-				return this.rightPressed() && this.downPressed();
-			}
-		}, {
-			key: 'attachListeners',
-			value: function attachListeners() {
-				document.addEventListener('keydown', this.handleKeyDown);
-				document.addEventListener('keyup', this.handleKeyUp);
-			}
-		}, {
-			key: 'removeListeners',
-			value: function removeListeners() {
-				document.removeEventListener('keydown', this.handleKeyDown);
-				document.removeEventListener('keyup', this.handleKeyUp);
-			}
-		}]);
-	
-		return KeyHandler;
-	}();
-	
-	exports.default = KeyHandler;
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.DIVER_MIN_Y = exports.DIVER_MOVE_AMOUNT = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _game_object = __webpack_require__(9);
-	
-	var _game_object2 = _interopRequireDefault(_game_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _laser_beam = __webpack_require__(10);
-	
-	var _laser_beam2 = _interopRequireDefault(_laser_beam);
-	
-	var _bomb = __webpack_require__(12);
-	
-	var _bomb2 = _interopRequireDefault(_bomb);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var DIVER_MOVE_AMOUNT = exports.DIVER_MOVE_AMOUNT = 6;
-	
-	var DIVER_SHEET = (0, _sprite_sheets.createDiverSpriteSheet)();
-	
-	var DIVER_MIN_Y = exports.DIVER_MIN_Y = 520;
-	
-	var Diver = function (_GameObject) {
-	  _inherits(Diver, _GameObject);
-	
-	  function Diver(options) {
-	    _classCallCheck(this, Diver);
-	
-	    var diverSprite = new _createjs2.default.Sprite(DIVER_SHEET);
-	
-	    var defaultOptions = {
-	      x: 200,
-	      y: 580,
-	      width: 16,
-	      height: 18,
-	      sprite: diverSprite
-	    };
-	    return _possibleConstructorReturn(this, (Diver.__proto__ || Object.getPrototypeOf(Diver)).call(this, Object.assign(defaultOptions, options), { minY: DIVER_MIN_Y }));
-	  }
-	
-	  _createClass(Diver, [{
-	    key: 'fireLaser',
-	    value: function fireLaser() {
-	      var laserBeam = new _laser_beam2.default({
-	        x: this.getCenterX() - _laser_beam.BEAM_WIDTH / 2,
-	        y: this.getY() - (_laser_beam.BEAM_HEIGHT + 2)
-	      });
-	      return laserBeam;
-	    }
-	  }, {
-	    key: 'dropBomb',
-	    value: function dropBomb() {
-	      var bomb = new _bomb2.default({
-	        x: this.getX(),
-	        y: this.getY() + 2
-	      });
-	      return bomb;
-	    }
-	  }]);
-	
-	  return Diver;
-	}(_game_object2.default);
-	
-	exports.default = Diver;
-
-/***/ },
-/* 9 */
-/***/ function(module, exports) {
-
 	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
@@ -882,304 +853,132 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var GameObject = function () {
-	  function GameObject(options, moveBounds) {
-	    _classCallCheck(this, GameObject);
+	var PositionHandler = function () {
+	  function PositionHandler(game) {
+	    _classCallCheck(this, PositionHandler);
 	
-	    this.moveBounds = Object.assign({
-	      minX: 0,
-	      minY: 0,
-	      maxX: 0,
-	      maxY: 0
-	    }, moveBounds);
-	
-	    this.sprite = options.sprite;
-	    this.sprite.x = options.x;
-	    this.sprite.y = options.y;
-	    this.sprite.setBounds(options.x, options.y, options.width, options.height);
-	    this.sprite.snapToPixel = true;
+	    this.game = game;
+	    this.board = game.board;
 	  }
 	
-	  _createClass(GameObject, [{
-	    key: "setStage",
-	    value: function setStage(stage) {
-	      this.stage = stage;
-	      if (this.moveBounds.maxX === 0) this.moveBounds.maxX = stage.canvas.width;
-	      if (this.moveBounds.maxY === 0) this.moveBounds.maxY = stage.canvas.height;
+	  _createClass(PositionHandler, [{
+	    key: "updatePositions",
+	    value: function updatePositions(e) {
+	      if (e.paused) return;
+	      this.updateBubblePositions();
+	      this.updateLaserBeamPositions();
+	      this.updateSegmentPositions();
+	      this.updateShrimpPositions();
+	      this.updateCrabPosition();
+	      this.updateScorePosition();
 	    }
 	  }, {
-	    key: "setX",
-	    value: function setX(x) {
-	      this.sprite.x = x;
+	    key: "updateBubblePositions",
+	    value: function updateBubblePositions() {
+	      var bubbles = this.board.bubbles;
+	      var bubbleIdxsToRemove = [];
+	      bubbles.forEach(function (bubble, idx) {
+	        bubble.updatePosition();
+	        if (bubble.getY() <= -bubble.getHeight()) {
+	          bubbleIdxsToRemove.push(idx);
+	        }
+	      });
+	      this.board.removeBubbles(bubbleIdxsToRemove);
 	    }
 	  }, {
-	    key: "setY",
-	    value: function setY(y) {
-	      this.sprite.y = y;
+	    key: "updateLaserBeamPositions",
+	    value: function updateLaserBeamPositions() {
+	      var laserBeams = this.board.laserBeams;
+	      var laserIdxsToRemove = [];
+	      laserBeams.forEach(function (beam, idx) {
+	        beam.updatePosition();
+	        if (beam.getY() <= -beam.getHeight()) {
+	          laserIdxsToRemove.push(idx);
+	        }
+	      });
+	      this.board.removeLaserBeams(laserIdxsToRemove);
 	    }
 	  }, {
-	    key: "changeX",
-	    value: function changeX(xDiff) {
-	      this.sprite.x += xDiff;
+	    key: "updateSegmentPositions",
+	    value: function updateSegmentPositions() {
+	      var _this = this;
+	
+	      var segments = this.board.segments;
+	      segments.forEach(function (segment) {
+	        var collided = false;
+	        segments.forEach(function (segment2) {
+	          if (segment !== segment2) {
+	            if (segment.overlapsSegment(segment2)) collided = true;
+	          }
+	        });
+	        if (!collided) {
+	          _this.board.sponges.forEach(function (sponge) {
+	            if (segment.overlaps(sponge)) collided = true;
+	          });
+	        }
+	        segment.updatePosition(collided);
+	      });
 	    }
 	  }, {
-	    key: "changeY",
-	    value: function changeY(yDiff) {
-	      this.sprite.y += yDiff;
+	    key: "updateShrimpPositions",
+	    value: function updateShrimpPositions() {
+	      var _this2 = this;
+	
+	      var shrimps = this.board.shrimp;
+	      var shrimpIdxsToRemove = [];
+	      shrimps.forEach(function (shrimp, idx) {
+	        shrimp.updatePosition();
+	        if (!shrimp.isPartiallyInMoveBounds()) {
+	          shrimpIdxsToRemove.push(idx);
+	        } else {
+	          if (Math.random() < .01) {
+	            var sponges = _this2.board.sponges;
+	            var segments = _this2.board.segments;
+	            var collided = false;
+	            sponges.forEach(function (sponge) {
+	              if (shrimp.overlaps(sponge)) collided = true;
+	            });
+	            if (!collided) {
+	              segments.forEach(function (segment) {
+	                if (shrimp.overlaps(segment)) collided = true;
+	              });
+	            }
+	            if (!collided && shrimp.moveBounds.maxY - shrimp.getY() > shrimp.getHeight()) {
+	              _this2.board.addSeaSponge(shrimp.dropSeaSponge());
+	            }
+	          }
+	        }
+	      });
+	      this.board.removeShrimp(shrimpIdxsToRemove);
 	    }
 	  }, {
-	    key: "setBoundedX",
-	    value: function setBoundedX(x) {
-	      this.sprite.x = this.withinMoveBoundsX(x);
-	    }
-	  }, {
-	    key: "setBoundedY",
-	    value: function setBoundedY(y) {
-	      this.sprite.y = this.withinMoveBoundsY(y);
-	    }
-	  }, {
-	    key: "changeBoundedX",
-	    value: function changeBoundedX(xDiff) {
-	      this.setBoundedX(this.sprite.x + xDiff);
-	    }
-	  }, {
-	    key: "changeBoundedY",
-	    value: function changeBoundedY(yDiff) {
-	      this.setBoundedY(this.sprite.y + yDiff);
-	    }
-	  }, {
-	    key: "changeBoundedPos",
-	    value: function changeBoundedPos(xDiff, yDiff) {
-	      this.changeBoundedX(xDiff);
-	      this.changeBoundedY(yDiff);
-	    }
-	  }, {
-	    key: "getX",
-	    value: function getX() {
-	      return this.sprite.x;
-	    }
-	  }, {
-	    key: "getY",
-	    value: function getY() {
-	      return this.sprite.y;
-	    }
-	  }, {
-	    key: "getWidth",
-	    value: function getWidth() {
-	      return this.sprite.getBounds().width;
-	    }
-	  }, {
-	    key: "getHeight",
-	    value: function getHeight() {
-	      return this.sprite.getBounds().height;
-	    }
-	  }, {
-	    key: "getMaxX",
-	    value: function getMaxX() {
-	      return this.getX() + this.getWidth() - 1;
-	    }
-	  }, {
-	    key: "getMaxY",
-	    value: function getMaxY() {
-	      return this.getY() + this.getHeight() - 1;
-	    }
-	  }, {
-	    key: "getCenterX",
-	    value: function getCenterX() {
-	      return this.sprite.x + this.sprite.getBounds().width / 2;
-	    }
-	  }, {
-	    key: "getCenterY",
-	    value: function getCenterY() {
-	      return this.sprite.y + this.sprite.getBounds().height / 2;
-	    }
-	  }, {
-	    key: "withinCanvas",
-	    value: function withinCanvas(posX, posY) {
-	      var bounds = this.sprite.getBounds();
-	      return posX >= 0 && posX + bounds.width <= this.canvas.width && posY >= 0 && posY + bounds.height <= this.canvas.height;
-	    }
-	  }, {
-	    key: "isFullyInMoveBounds",
-	    value: function isFullyInMoveBounds() {
-	      if (this.getX() >= this.moveBounds.minX && this.getMaxX() <= this.moveBounds.maxX && this.getY() >= this.moveBounds.minY && this.getMaxY() <= this.moveBounds.maxY) {
-	        return true;
-	      } else {
-	        return false;
+	    key: "updateCrabPosition",
+	    value: function updateCrabPosition() {
+	      var crab = this.board.crab;
+	      if (crab) {
+	        crab.updatePosition();
+	        if (!crab.isPartiallyInMoveBounds()) this.board.removeCrab();
 	      }
 	    }
 	  }, {
-	    key: "isPartiallyInMoveBounds",
-	    value: function isPartiallyInMoveBounds() {
-	      if (this.getMaxX() >= this.moveBounds.minX && this.getX() <= this.moveBounds.maxX && this.getMaxY() >= this.moveBounds.minY && this.getY() <= this.moveBounds.maxY) {
-	        return true;
-	      } else {
-	        return false;
-	      }
-	    }
-	  }, {
-	    key: "withinMoveBoundsX",
-	    value: function withinMoveBoundsX(newX) {
-	      var bounds = this.sprite.getBounds();
-	      if (newX < this.moveBounds.minX) newX = this.moveBounds.minX;
-	      if (newX + bounds.width > this.moveBounds.maxX) {
-	        newX = this.moveBounds.maxX - bounds.width;
-	      }
-	      return newX;
-	    }
-	  }, {
-	    key: "withinMoveBoundsY",
-	    value: function withinMoveBoundsY(newY) {
-	      var bounds = this.sprite.getBounds();
-	      if (newY < this.moveBounds.minY) newY = this.moveBounds.minY;
-	      if (newY + bounds.height > this.moveBounds.maxY) {
-	        newY = this.moveBounds.maxY - bounds.height;
-	      }
-	      return newY;
-	    }
-	  }, {
-	    key: "destroySprite",
-	    value: function destroySprite() {
-	      this.sprite = null;
-	    }
-	  }, {
-	    key: "destroy",
-	    value: function destroy() {
-	      this.destroySprite();
-	    }
-	  }, {
-	    key: "overlaps",
-	    value: function overlaps(other) {
-	      if (this.getMaxX() < other.getX() || other.getMaxX() < this.getX() || this.getMaxY() < other.getY() || other.getMaxY() < this.getY()) {
-	        return false;
-	      } else {
-	        return true;
-	      }
+	    key: "updateScorePosition",
+	    value: function updateScorePosition() {
+	      var scores = this.board.scores;
+	      var scoreIdxsToRemove = [];
+	      scores.forEach(function (score, idx) {
+	        if (score.getAlpha() <= 0) scoreIdxsToRemove.push(idx);else score.updatePosition();
+	      });
+	      this.board.removeScores(scoreIdxsToRemove);
 	    }
 	  }]);
 	
-	  return GameObject;
+	  return PositionHandler;
 	}();
 	
-	exports.default = GameObject;
+	exports.default = PositionHandler;
 
 /***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.BEAM_HEIGHT = exports.BEAM_WIDTH = undefined;
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _moving_object2 = _interopRequireDefault(_moving_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var VELOCITY_Y = -16;
-	var BEAM_WIDTH = exports.BEAM_WIDTH = 2;
-	var BEAM_HEIGHT = exports.BEAM_HEIGHT = 16;
-	
-	var LASER_BEAM_SHEET = (0, _sprite_sheets.createLaserBeamSpriteSheet)();
-	
-	var LaserBeam = function (_MovingObject) {
-	  _inherits(LaserBeam, _MovingObject);
-	
-	  function LaserBeam(options) {
-	    _classCallCheck(this, LaserBeam);
-	
-	    var laserBeamSprite = new _createjs2.default.Sprite(LASER_BEAM_SHEET);
-	
-	    var defaultOptions = {
-	      width: BEAM_WIDTH,
-	      height: BEAM_HEIGHT,
-	      sprite: laserBeamSprite,
-	      velocityY: VELOCITY_Y
-	    };
-	
-	    return _possibleConstructorReturn(this, (LaserBeam.__proto__ || Object.getPrototypeOf(LaserBeam)).call(this, Object.assign(defaultOptions, options)));
-	  }
-	
-	  return LaserBeam;
-	}(_moving_object2.default);
-	
-	exports.default = LaserBeam;
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.UP = exports.DOWN = exports.LEFT = exports.RIGHT = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _game_object = __webpack_require__(9);
-	
-	var _game_object2 = _interopRequireDefault(_game_object);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var RIGHT = exports.RIGHT = 'RIGHT';
-	var LEFT = exports.LEFT = 'LEFT';
-	var DOWN = exports.DOWN = 'DOWN';
-	var UP = exports.UP = 'UP';
-	
-	var MovingObject = function (_GameObject) {
-	  _inherits(MovingObject, _GameObject);
-	
-	  function MovingObject(options, moveBounds) {
-	    _classCallCheck(this, MovingObject);
-	
-	    var _this = _possibleConstructorReturn(this, (MovingObject.__proto__ || Object.getPrototypeOf(MovingObject)).call(this, options, moveBounds));
-	
-	    _this.direction = options.direction || RIGHT;
-	    _this.velocityX = options.velocityX || 0;
-	    _this.velocityY = options.velocityY || 0;
-	    return _this;
-	  }
-	
-	  _createClass(MovingObject, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      this.changeX(this.velocityX);
-	      this.changeY(this.velocityY);
-	    }
-	  }]);
-	
-	  return MovingObject;
-	}(_game_object2.default);
-	
-	exports.default = MovingObject;
-
-/***/ },
-/* 12 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1190,73 +989,294 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _createjs = __webpack_require__(1);
+	var _head = __webpack_require__(8);
 	
-	var _createjs2 = _interopRequireDefault(_createjs);
+	var _head2 = _interopRequireDefault(_head);
 	
-	var _game_object = __webpack_require__(9);
+	var _score = __webpack_require__(16);
 	
-	var _game_object2 = _interopRequireDefault(_game_object);
+	var _score2 = _interopRequireDefault(_score);
 	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _explosion = __webpack_require__(13);
-	
-	var _explosion2 = _interopRequireDefault(_explosion);
+	var _scores = __webpack_require__(18);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	var CollisionHandler = function () {
+	  function CollisionHandler(game) {
+	    _classCallCheck(this, CollisionHandler);
 	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var BOMB_SHEET = (0, _sprite_sheets.createBombSpriteSheet)();
-	
-	var Bomb = function (_GameObject) {
-	  _inherits(Bomb, _GameObject);
-	
-	  function Bomb(options) {
-	    _classCallCheck(this, Bomb);
-	
-	    var bombSprite = new _createjs2.default.Sprite(BOMB_SHEET, 'default');
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      sprite: bombSprite
-	    };
-	
-	    var _this = _possibleConstructorReturn(this, (Bomb.__proto__ || Object.getPrototypeOf(Bomb)).call(this, Object.assign(defaultOptions, options)));
-	
-	    _this.ticks = 30;
-	    return _this;
+	    this.game = game;
+	    this.board = game.board;
+	    this.soundHandler = game.soundHandler;
 	  }
 	
-	  _createClass(Bomb, [{
-	    key: 'tickDown',
-	    value: function tickDown() {
-	      if (this.ticks > 0) this.ticks -= 1;
+	  _createClass(CollisionHandler, [{
+	    key: 'checkCollisions',
+	    value: function checkCollisions(e) {
+	      var game = this.game;
+	      if (e.paused) return;
+	      if (game.started) {
+	        this.checkExplosionCollisions();
+	        this.checkSegmentDiverCollisions();
+	        this.checkCrabCollisions();
+	        this.checkShrimpDiverCollisions();
+	      }
+	      if (game.started) {
+	        this.checkLaserBeamCollisions();
+	      }
+	      if (game.started) {
+	        game.tryAddPolychaete();
+	      }
 	    }
 	  }, {
-	    key: 'explode',
-	    value: function explode() {
-	      var explosion = new _explosion2.default({
-	        x: this.getCenterX() - _explosion.EXPLOSION_RADIUS,
-	        y: this.getCenterY() - _explosion.EXPLOSION_RADIUS
+	    key: 'checkSegmentDiverCollisions',
+	    value: function checkSegmentDiverCollisions() {
+	      var _this = this;
+	
+	      this.board.segments.forEach(function (segment) {
+	        if (segment.overlaps(_this.board.diver)) {
+	          _this.game.endGame();
+	        }
 	      });
-	      return explosion;
+	    }
+	  }, {
+	    key: 'checkCrabCollisions',
+	    value: function checkCrabCollisions() {
+	      var game = this.game;
+	      var crab = this.board.crab;
+	      var spongeIdxsToRemove = [];
+	
+	      if (crab) {
+	        if (crab.overlaps(this.board.diver)) {
+	          game.endGame();
+	        }
+	        this.board.sponges.forEach(function (sponge, spongeIdx) {
+	          if (crab.overlaps(sponge)) {
+	            spongeIdxsToRemove.push(spongeIdx);
+	          }
+	        });
+	        this.board.removeSeaSponges(spongeIdxsToRemove);
+	      }
+	    }
+	  }, {
+	    key: 'checkShrimpDiverCollisions',
+	    value: function checkShrimpDiverCollisions() {
+	      var _this2 = this;
+	
+	      this.board.shrimp.forEach(function (shrimp) {
+	        if (shrimp.overlaps(_this2.board.diver)) {
+	          _this2.game.endGame();
+	        }
+	      });
+	    }
+	  }, {
+	    key: 'checkLaserBeamCollisions',
+	    value: function checkLaserBeamCollisions() {
+	      var _this3 = this;
+	
+	      var game = this.game;
+	      var board = this.board;
+	      var laserBeams = this.board.laserBeams;
+	      var beamIdxsToRemove = [];
+	      var spongeIdxsToRemove = [];
+	      var segmentIdxsToRemove = [];
+	      var shrimpIdxsToRemove = [];
+	
+	      laserBeams.forEach(function (beam, beamIdx) {
+	        // only allow a laser beam a single hit
+	        var hit = false;
+	
+	        var spongeIdx = _this3.checkLaserBeamSpongeCollisions(beam);
+	        if (spongeIdx !== false) {
+	          if (spongeIdx !== true) {
+	            spongeIdxsToRemove.push(spongeIdx);
+	          }
+	          beamIdxsToRemove.push(beamIdx);
+	          hit = true;
+	        }
+	
+	        if (!hit) {
+	          var segmentIdx = _this3.checkLaserBeamSegmentCollisions(beam);
+	          if (segmentIdx !== false) {
+	            segmentIdxsToRemove.push(segmentIdx);
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
+	          }
+	        }
+	
+	        if (!hit) {
+	          var crabHit = _this3.checkLaserBeamCrabCollisions(beam);
+	          if (crabHit) {
+	            board.removeCrab();
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
+	          }
+	        }
+	
+	        if (!hit) {
+	          var shrimpIdx = _this3.checkLaserBeamShrimpCollisions(beam);
+	          if (shrimpIdx !== false) {
+	            shrimpIdxsToRemove.push(shrimpIdx);
+	            beamIdxsToRemove.push(beamIdx);
+	            hit = true;
+	          }
+	        }
+	      });
+	
+	      board.removeLaserBeams(beamIdxsToRemove);
+	      board.removeSeaSponges(spongeIdxsToRemove);
+	      board.removeSegments(segmentIdxsToRemove);
+	      board.removeShrimp(shrimpIdxsToRemove);
+	    }
+	  }, {
+	    key: 'checkLaserBeamSpongeCollisions',
+	    value: function checkLaserBeamSpongeCollisions(beam) {
+	      var sponges = this.board.sponges;
+	      for (var i = 0; i < sponges.length; i++) {
+	        if (beam.overlaps(sponges[i])) {
+	          sponges[i].handleHit();
+	          if (sponges[i].hits <= 0) {
+	            this.game.incrementScore(_scores.SPONGE_HIT_SCORE);
+	            this.board.addScore(_score2.default.createScoreAboveObject(sponges[i], _scores.SPONGE_HIT_SCORE));
+	            this.soundHandler.playSeaSpongeDestroy();
+	            return i;
+	          } else {
+	            this.soundHandler.playSeaSpongeHit();
+	            return true;
+	          }
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamSegmentCollisions',
+	    value: function checkLaserBeamSegmentCollisions(beam) {
+	      var game = this.game;
+	      var segments = this.board.segments;
+	      for (var i = 0; i < segments.length; i++) {
+	        if (beam.overlaps(segments[i])) {
+	          var score = _scores.SEGMENT_HIT_SCORE;
+	          if (segments[i] instanceof _head2.default) {
+	            score = _scores.HEAD_HIT_SCORE;
+	          }
+	          game.incrementScore(score);
+	          this.board.addScore(_score2.default.createScoreAboveObject(segments[i], score));
+	          this.soundHandler.playSegmentHit();
+	          return i;
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamCrabCollisions',
+	    value: function checkLaserBeamCrabCollisions(beam) {
+	      var game = this.game;
+	      var crab = this.board.crab;
+	      if (crab && beam.overlaps(crab)) {
+	        var score = _scores.CRAB_HIT_SCORE_FAR;
+	        if (crab.getY() <= 500 && crab.getY() > 400) {
+	          score = _scores.CRAB_HIT_SCORE_MIDDLE;
+	        } else if (crab.getY() > 500) {
+	          score = _scores.CRAB_HIT_SCORE_CLOSE;
+	        }
+	        game.incrementScore(score);
+	        this.board.addScore(_score2.default.createScoreAboveObject(crab, score));
+	        this.soundHandler.playCrabHit();
+	        return true;
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkLaserBeamShrimpCollisions',
+	    value: function checkLaserBeamShrimpCollisions(beam) {
+	      var shrimp = this.board.shrimp;
+	      for (var i = 0; i < shrimp.length; i++) {
+	        if (beam.overlaps(shrimp[i])) {
+	          this.game.incrementScore(_scores.SHRIMP_HIT_SCORE);
+	          this.board.addScore(_score2.default.createScoreAboveObject(shrimp[i], _scores.SHRIMP_HIT_SCORE));
+	          this.soundHandler.playShrimpHit();
+	          return i;
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: 'checkExplosionCollisions',
+	    value: function checkExplosionCollisions() {
+	      var _this4 = this;
+	
+	      var game = this.game;
+	      var board = this.board;
+	      var explosions = this.board.explosions;
+	      var sponges = this.board.sponges;
+	      var segments = this.board.segments;
+	      var shrimps = this.board.shrimp;
+	      var crab = this.board.crab;
+	      var spongeIdxsToRemove = [];
+	      var segmentIdxsToRemove = [];
+	      var shrimpIdxsToRemove = [];
+	
+	      explosions.forEach(function (explosion) {
+	        if (explosion.overlaps(_this4.board.diver)) {
+	          game.endGame();
+	        }
+	
+	        if (game.started) {
+	          (function () {
+	            var score = void 0;
+	
+	            if (crab) {
+	              if (explosion.overlaps(crab)) {
+	                score = _scores.CRAB_HIT_SCORE_CLOSE / 2;
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(crab, score));
+	                game.incrementScore(score);
+	                board.removeCrab();
+	              }
+	            }
+	            sponges.forEach(function (sponge, idx) {
+	              if (explosion.overlaps(sponge)) {
+	                spongeIdxsToRemove.push(idx);
+	              }
+	            });
+	            segments.forEach(function (segment, idx) {
+	              if (explosion.overlaps(segment)) {
+	                segmentIdxsToRemove.push(idx);
+	                if (segment instanceof _head2.default) {
+	                  score = _scores.HEAD_HIT_SCORE / 2;
+	                } else {
+	                  score = _scores.SEGMENT_HIT_SCORE / 2;
+	                }
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(segment, score));
+	                game.incrementScore(score);
+	              }
+	            });
+	            shrimps.forEach(function (shrimp, idx) {
+	              if (explosion.overlaps(shrimp)) {
+	                shrimpIdxsToRemove.push(idx);
+	                score = _scores.SHRIMP_HIT_SCORE / 2;
+	                _this4.board.addScore(_score2.default.createScoreAboveObject(shrimp, score));
+	                game.incrementScore(score);
+	              }
+	            });
+	          })();
+	        }
+	      });
+	
+	      board.removeSeaSponges(spongeIdxsToRemove);
+	      board.removeSegments(segmentIdxsToRemove, false);
+	      board.removeShrimp(shrimpIdxsToRemove);
 	    }
 	  }]);
 	
-	  return Bomb;
-	}(_game_object2.default);
+	  return CollisionHandler;
+	}();
 	
-	exports.default = Bomb;
+	exports.default = CollisionHandler;
 
 /***/ },
-/* 13 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1264,7 +1284,6 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.EXPLOSION_RADIUS = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -1272,93 +1291,11 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _util = __webpack_require__(5);
-	
-	var _game_object = __webpack_require__(9);
-	
-	var _game_object2 = _interopRequireDefault(_game_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var EXPLOSION_SHEET = (0, _sprite_sheets.createExplosionSpriteSheet)();
-	
-	var EXPLOSION_RADIUS = exports.EXPLOSION_RADIUS = 56;
-	
-	var Explosion = function (_GameObject) {
-	  _inherits(Explosion, _GameObject);
-	
-	  function Explosion(options) {
-	    _classCallCheck(this, Explosion);
-	
-	    var explosionSprite = new _createjs2.default.Sprite(EXPLOSION_SHEET, 'default');
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: EXPLOSION_RADIUS * 2,
-	      height: EXPLOSION_RADIUS * 2,
-	      sprite: explosionSprite
-	    };
-	
-	    var _this = _possibleConstructorReturn(this, (Explosion.__proto__ || Object.getPrototypeOf(Explosion)).call(this, Object.assign(defaultOptions, options)));
-	
-	    _this.ticks = 20;
-	    return _this;
-	  }
-	
-	  _createClass(Explosion, [{
-	    key: 'tickDown',
-	    value: function tickDown() {
-	      if (this.ticks > 0) this.ticks -= 1;
-	    }
-	  }, {
-	    key: 'overlaps',
-	    value: function overlaps(gameObject) {
-	      return this.pointInRadius(gameObject.getX(), gameObject.getY()) || this.pointInRadius(gameObject.getX(), gameObject.getMaxY()) || this.pointInRadius(gameObject.getMaxX(), gameObject.getY()) || this.pointInRadius(gameObject.getMaxX(), gameObject.getMaxY());
-	    }
-	  }, {
-	    key: 'pointInRadius',
-	    value: function pointInRadius(x, y) {
-	      return (0, _util.distance)(this.getCenterX(), this.getCenterY(), x, y) <= EXPLOSION_RADIUS;
-	    }
-	  }]);
-	
-	  return Explosion;
-	}(_game_object2.default);
-	
-	exports.default = Explosion;
-
-/***/ },
-/* 14 */,
-/* 15 */,
-/* 16 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _segment = __webpack_require__(17);
+	var _segment = __webpack_require__(9);
 	
 	var _segment2 = _interopRequireDefault(_segment);
 	
-	var _moving_object = __webpack_require__(11);
+	var _moving_object = __webpack_require__(10);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
@@ -1405,7 +1342,7 @@
 	exports.default = Head;
 
 /***/ },
-/* 17 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1421,13 +1358,13 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _moving_object = __webpack_require__(11);
+	var _moving_object = __webpack_require__(10);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
 	var _sprite_sheets = __webpack_require__(4);
 	
-	var _diver = __webpack_require__(8);
+	var _diver = __webpack_require__(12);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -1622,7 +1559,405 @@
 	exports.default = Segment;
 
 /***/ },
-/* 18 */
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.UP = exports.DOWN = exports.LEFT = exports.RIGHT = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _game_object = __webpack_require__(11);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var RIGHT = exports.RIGHT = 'RIGHT';
+	var LEFT = exports.LEFT = 'LEFT';
+	var DOWN = exports.DOWN = 'DOWN';
+	var UP = exports.UP = 'UP';
+	
+	var MovingObject = function (_GameObject) {
+	  _inherits(MovingObject, _GameObject);
+	
+	  function MovingObject(options, moveBounds) {
+	    _classCallCheck(this, MovingObject);
+	
+	    var _this = _possibleConstructorReturn(this, (MovingObject.__proto__ || Object.getPrototypeOf(MovingObject)).call(this, options, moveBounds));
+	
+	    _this.direction = options.direction || RIGHT;
+	    _this.velocityX = options.velocityX || 0;
+	    _this.velocityY = options.velocityY || 0;
+	    return _this;
+	  }
+	
+	  _createClass(MovingObject, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      this.changeX(this.velocityX);
+	      this.changeY(this.velocityY);
+	    }
+	  }]);
+	
+	  return MovingObject;
+	}(_game_object2.default);
+	
+	exports.default = MovingObject;
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var GameObject = function () {
+	  function GameObject(options, moveBounds) {
+	    _classCallCheck(this, GameObject);
+	
+	    this.moveBounds = Object.assign({
+	      minX: 0,
+	      minY: 0,
+	      maxX: 0,
+	      maxY: 0
+	    }, moveBounds);
+	
+	    this.sprite = options.sprite;
+	    this.sprite.x = options.x;
+	    this.sprite.y = options.y;
+	    this.sprite.setBounds(options.x, options.y, options.width, options.height);
+	    this.sprite.snapToPixel = true;
+	  }
+	
+	  _createClass(GameObject, [{
+	    key: "setStage",
+	    value: function setStage(stage) {
+	      this.stage = stage;
+	      if (this.moveBounds.maxX === 0) this.moveBounds.maxX = stage.canvas.width;
+	      if (this.moveBounds.maxY === 0) this.moveBounds.maxY = stage.canvas.height;
+	    }
+	  }, {
+	    key: "setX",
+	    value: function setX(x) {
+	      this.sprite.x = x;
+	    }
+	  }, {
+	    key: "setY",
+	    value: function setY(y) {
+	      this.sprite.y = y;
+	    }
+	  }, {
+	    key: "changeX",
+	    value: function changeX(xDiff) {
+	      this.sprite.x += xDiff;
+	    }
+	  }, {
+	    key: "changeY",
+	    value: function changeY(yDiff) {
+	      this.sprite.y += yDiff;
+	    }
+	  }, {
+	    key: "setBoundedX",
+	    value: function setBoundedX(x) {
+	      this.sprite.x = this.withinMoveBoundsX(x);
+	    }
+	  }, {
+	    key: "setBoundedY",
+	    value: function setBoundedY(y) {
+	      this.sprite.y = this.withinMoveBoundsY(y);
+	    }
+	  }, {
+	    key: "changeBoundedX",
+	    value: function changeBoundedX(xDiff) {
+	      this.setBoundedX(this.sprite.x + xDiff);
+	    }
+	  }, {
+	    key: "changeBoundedY",
+	    value: function changeBoundedY(yDiff) {
+	      this.setBoundedY(this.sprite.y + yDiff);
+	    }
+	  }, {
+	    key: "changeBoundedPos",
+	    value: function changeBoundedPos(xDiff, yDiff) {
+	      this.changeBoundedX(xDiff);
+	      this.changeBoundedY(yDiff);
+	    }
+	  }, {
+	    key: "getX",
+	    value: function getX() {
+	      return this.sprite.x;
+	    }
+	  }, {
+	    key: "getY",
+	    value: function getY() {
+	      return this.sprite.y;
+	    }
+	  }, {
+	    key: "getWidth",
+	    value: function getWidth() {
+	      return this.sprite.getBounds().width;
+	    }
+	  }, {
+	    key: "getHeight",
+	    value: function getHeight() {
+	      return this.sprite.getBounds().height;
+	    }
+	  }, {
+	    key: "getMaxX",
+	    value: function getMaxX() {
+	      return this.getX() + this.getWidth() - 1;
+	    }
+	  }, {
+	    key: "getMaxY",
+	    value: function getMaxY() {
+	      return this.getY() + this.getHeight() - 1;
+	    }
+	  }, {
+	    key: "getCenterX",
+	    value: function getCenterX() {
+	      return this.sprite.x + this.sprite.getBounds().width / 2;
+	    }
+	  }, {
+	    key: "getCenterY",
+	    value: function getCenterY() {
+	      return this.sprite.y + this.sprite.getBounds().height / 2;
+	    }
+	  }, {
+	    key: "withinCanvas",
+	    value: function withinCanvas(posX, posY) {
+	      var bounds = this.sprite.getBounds();
+	      return posX >= 0 && posX + bounds.width <= this.canvas.width && posY >= 0 && posY + bounds.height <= this.canvas.height;
+	    }
+	  }, {
+	    key: "isFullyInMoveBounds",
+	    value: function isFullyInMoveBounds() {
+	      if (this.getX() >= this.moveBounds.minX && this.getMaxX() <= this.moveBounds.maxX && this.getY() >= this.moveBounds.minY && this.getMaxY() <= this.moveBounds.maxY) {
+	        return true;
+	      } else {
+	        return false;
+	      }
+	    }
+	  }, {
+	    key: "isPartiallyInMoveBounds",
+	    value: function isPartiallyInMoveBounds() {
+	      if (this.getMaxX() >= this.moveBounds.minX && this.getX() <= this.moveBounds.maxX && this.getMaxY() >= this.moveBounds.minY && this.getY() <= this.moveBounds.maxY) {
+	        return true;
+	      } else {
+	        return false;
+	      }
+	    }
+	  }, {
+	    key: "withinMoveBoundsX",
+	    value: function withinMoveBoundsX(newX) {
+	      var bounds = this.sprite.getBounds();
+	      if (newX < this.moveBounds.minX) newX = this.moveBounds.minX;
+	      if (newX + bounds.width > this.moveBounds.maxX) {
+	        newX = this.moveBounds.maxX - bounds.width;
+	      }
+	      return newX;
+	    }
+	  }, {
+	    key: "withinMoveBoundsY",
+	    value: function withinMoveBoundsY(newY) {
+	      var bounds = this.sprite.getBounds();
+	      if (newY < this.moveBounds.minY) newY = this.moveBounds.minY;
+	      if (newY + bounds.height > this.moveBounds.maxY) {
+	        newY = this.moveBounds.maxY - bounds.height;
+	      }
+	      return newY;
+	    }
+	  }, {
+	    key: "destroySprite",
+	    value: function destroySprite() {
+	      this.sprite = null;
+	    }
+	  }, {
+	    key: "destroy",
+	    value: function destroy() {
+	      this.destroySprite();
+	    }
+	  }, {
+	    key: "overlaps",
+	    value: function overlaps(other) {
+	      if (this.getMaxX() < other.getX() || other.getMaxX() < this.getX() || this.getMaxY() < other.getY() || other.getMaxY() < this.getY()) {
+	        return false;
+	      } else {
+	        return true;
+	      }
+	    }
+	  }]);
+	
+	  return GameObject;
+	}();
+	
+	exports.default = GameObject;
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.DIVER_MIN_Y = exports.DIVER_MOVE_AMOUNT = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _game_object = __webpack_require__(11);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _laser_beam = __webpack_require__(13);
+	
+	var _laser_beam2 = _interopRequireDefault(_laser_beam);
+	
+	var _bomb = __webpack_require__(14);
+	
+	var _bomb2 = _interopRequireDefault(_bomb);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var DIVER_MOVE_AMOUNT = exports.DIVER_MOVE_AMOUNT = 6;
+	
+	var DIVER_SHEET = (0, _sprite_sheets.createDiverSpriteSheet)();
+	
+	var DIVER_MIN_Y = exports.DIVER_MIN_Y = 520;
+	
+	var Diver = function (_GameObject) {
+	  _inherits(Diver, _GameObject);
+	
+	  function Diver(options) {
+	    _classCallCheck(this, Diver);
+	
+	    var diverSprite = new _createjs2.default.Sprite(DIVER_SHEET);
+	
+	    var defaultOptions = {
+	      x: 200,
+	      y: 580,
+	      width: 16,
+	      height: 18,
+	      sprite: diverSprite
+	    };
+	    return _possibleConstructorReturn(this, (Diver.__proto__ || Object.getPrototypeOf(Diver)).call(this, Object.assign(defaultOptions, options), { minY: DIVER_MIN_Y }));
+	  }
+	
+	  _createClass(Diver, [{
+	    key: 'fireLaser',
+	    value: function fireLaser() {
+	      var laserBeam = new _laser_beam2.default({
+	        x: this.getCenterX() - _laser_beam.BEAM_WIDTH / 2,
+	        y: this.getY() - (_laser_beam.BEAM_HEIGHT + 2)
+	      });
+	      return laserBeam;
+	    }
+	  }, {
+	    key: 'dropBomb',
+	    value: function dropBomb() {
+	      var bomb = new _bomb2.default({
+	        x: this.getX(),
+	        y: this.getY() + 2
+	      });
+	      return bomb;
+	    }
+	  }]);
+	
+	  return Diver;
+	}(_game_object2.default);
+	
+	exports.default = Diver;
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.BEAM_HEIGHT = exports.BEAM_WIDTH = undefined;
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _moving_object = __webpack_require__(10);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var VELOCITY_Y = -16;
+	var BEAM_WIDTH = exports.BEAM_WIDTH = 2;
+	var BEAM_HEIGHT = exports.BEAM_HEIGHT = 16;
+	
+	var LASER_BEAM_SHEET = (0, _sprite_sheets.createLaserBeamSpriteSheet)();
+	
+	var LaserBeam = function (_MovingObject) {
+	  _inherits(LaserBeam, _MovingObject);
+	
+	  function LaserBeam(options) {
+	    _classCallCheck(this, LaserBeam);
+	
+	    var laserBeamSprite = new _createjs2.default.Sprite(LASER_BEAM_SHEET);
+	
+	    var defaultOptions = {
+	      width: BEAM_WIDTH,
+	      height: BEAM_HEIGHT,
+	      sprite: laserBeamSprite,
+	      velocityY: VELOCITY_Y
+	    };
+	
+	    return _possibleConstructorReturn(this, (LaserBeam.__proto__ || Object.getPrototypeOf(LaserBeam)).call(this, Object.assign(defaultOptions, options)));
+	  }
+	
+	  return LaserBeam;
+	}(_moving_object2.default);
+	
+	exports.default = LaserBeam;
+
+/***/ },
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1637,11 +1972,169 @@
 	
 	var _createjs2 = _interopRequireDefault(_createjs);
 	
-	var _moving_object = __webpack_require__(11);
+	var _game_object = __webpack_require__(11);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _explosion = __webpack_require__(15);
+	
+	var _explosion2 = _interopRequireDefault(_explosion);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var BOMB_SHEET = (0, _sprite_sheets.createBombSpriteSheet)();
+	
+	var Bomb = function (_GameObject) {
+	  _inherits(Bomb, _GameObject);
+	
+	  function Bomb(options) {
+	    _classCallCheck(this, Bomb);
+	
+	    var bombSprite = new _createjs2.default.Sprite(BOMB_SHEET, 'default');
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      sprite: bombSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Bomb.__proto__ || Object.getPrototypeOf(Bomb)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.ticks = 30;
+	    return _this;
+	  }
+	
+	  _createClass(Bomb, [{
+	    key: 'tickDown',
+	    value: function tickDown() {
+	      if (this.ticks > 0) this.ticks -= 1;
+	    }
+	  }, {
+	    key: 'explode',
+	    value: function explode() {
+	      var explosion = new _explosion2.default({
+	        x: this.getCenterX() - _explosion.EXPLOSION_RADIUS,
+	        y: this.getCenterY() - _explosion.EXPLOSION_RADIUS
+	      });
+	      return explosion;
+	    }
+	  }]);
+	
+	  return Bomb;
+	}(_game_object2.default);
+	
+	exports.default = Bomb;
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.EXPLOSION_RADIUS = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(5);
+	
+	var _game_object = __webpack_require__(11);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var EXPLOSION_SHEET = (0, _sprite_sheets.createExplosionSpriteSheet)();
+	
+	var EXPLOSION_RADIUS = exports.EXPLOSION_RADIUS = 56;
+	
+	var Explosion = function (_GameObject) {
+	  _inherits(Explosion, _GameObject);
+	
+	  function Explosion(options) {
+	    _classCallCheck(this, Explosion);
+	
+	    var explosionSprite = new _createjs2.default.Sprite(EXPLOSION_SHEET, 'default');
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: EXPLOSION_RADIUS * 2,
+	      height: EXPLOSION_RADIUS * 2,
+	      sprite: explosionSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Explosion.__proto__ || Object.getPrototypeOf(Explosion)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.ticks = 20;
+	    return _this;
+	  }
+	
+	  _createClass(Explosion, [{
+	    key: 'tickDown',
+	    value: function tickDown() {
+	      if (this.ticks > 0) this.ticks -= 1;
+	    }
+	  }, {
+	    key: 'overlaps',
+	    value: function overlaps(gameObject) {
+	      return this.pointInRadius(gameObject.getX(), gameObject.getY()) || this.pointInRadius(gameObject.getX(), gameObject.getMaxY()) || this.pointInRadius(gameObject.getMaxX(), gameObject.getY()) || this.pointInRadius(gameObject.getMaxX(), gameObject.getMaxY());
+	    }
+	  }, {
+	    key: 'pointInRadius',
+	    value: function pointInRadius(x, y) {
+	      return (0, _util.distance)(this.getCenterX(), this.getCenterY(), x, y) <= EXPLOSION_RADIUS;
+	    }
+	  }]);
+	
+	  return Explosion;
+	}(_game_object2.default);
+	
+	exports.default = Explosion;
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _moving_object = __webpack_require__(10);
 	
 	var _moving_object2 = _interopRequireDefault(_moving_object);
 	
-	var _score_sprite_sheets = __webpack_require__(19);
+	var _score_sprite_sheets = __webpack_require__(17);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -1730,7 +2223,7 @@
 	exports.default = Score;
 
 /***/ },
-/* 19 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1899,7 +2392,553 @@
 	};
 
 /***/ },
-/* 20 */,
+/* 18 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
+	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
+	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
+	var CRAB_HIT_SCORE_CLOSE = exports.CRAB_HIT_SCORE_CLOSE = 300;
+	var CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_MIDDLE = 600;
+	var CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_FAR = 900;
+	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _util = __webpack_require__(5);
+	
+	var _bubble = __webpack_require__(20);
+	
+	var _bubble2 = _interopRequireDefault(_bubble);
+	
+	var _diver = __webpack_require__(12);
+	
+	var _diver2 = _interopRequireDefault(_diver);
+	
+	var _head = __webpack_require__(8);
+	
+	var _head2 = _interopRequireDefault(_head);
+	
+	var _segment = __webpack_require__(9);
+	
+	var _segment2 = _interopRequireDefault(_segment);
+	
+	var _moving_object = __webpack_require__(10);
+	
+	var _sea_sponge = __webpack_require__(21);
+	
+	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	var _crab = __webpack_require__(22);
+	
+	var _crab2 = _interopRequireDefault(_crab);
+	
+	var _shrimp = __webpack_require__(23);
+	
+	var _shrimp2 = _interopRequireDefault(_shrimp);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Board = function () {
+	  function Board(options) {
+	    _classCallCheck(this, Board);
+	
+	    this.stage = options.stage;
+	
+	    this.bubbles = [];
+	    this.laserBeams = [];
+	    this.bombs = [];
+	    this.explosions = [];
+	    this.segments = [];
+	    this.sponges = [];
+	    this.shrimp = [];
+	    this.crab = null;
+	    this.scores = [];
+	
+	    this.setBackground();
+	  }
+	
+	  _createClass(Board, [{
+	    key: 'reset',
+	    value: function reset() {
+	      this.removeDiver();
+	      this.removeAllLaserBeams();
+	      this.removeAllBombs();
+	      this.removeAllExplosions();
+	      this.removeAllSeaSponges();
+	      this.removeAllSegments();
+	      this.removeAllShrimp();
+	      this.removeCrab();
+	      this.removeAllScores();
+	    }
+	  }, {
+	    key: 'addDiver',
+	    value: function addDiver() {
+	      this.diver = new _diver2.default();
+	      this.diver.setStage(this.stage);
+	      this.stage.addChild(this.diver.sprite);
+	    }
+	  }, {
+	    key: 'removeDiver',
+	    value: function removeDiver() {
+	      if (this.diver) {
+	        this.stage.removeChild(this.diver.sprite);
+	        this.diver.destroy();
+	        this.diver = null;
+	      }
+	    }
+	  }, {
+	    key: 'setBackground',
+	    value: function setBackground() {
+	      var background = new _createjs2.default.Shape();
+	      background.graphics.beginFill('#002e9a').drawRect(0, 0, this.stage.canvas.width, this.stage.canvas.height);
+	      this.stage.addChild(background);
+	      this.stage.setChildIndex(background, 0);
+	      this.stage.update();
+	    }
+	  }, {
+	    key: 'addBubbles',
+	    value: function addBubbles(numBubbles) {
+	      var bubblesPlaced = 0;
+	
+	      while (bubblesPlaced < numBubbles) {
+	        var x = this.stage.canvas.width * Math.random();
+	        var y = this.stage.canvas.height * Math.random();
+	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
+	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
+	        this.addBubble(bubble);
+	        bubblesPlaced++;
+	      }
+	    }
+	  }, {
+	    key: 'addSeaSponges',
+	    value: function addSeaSponges(numSponges) {
+	      var _this = this;
+	
+	      var spongesPlaced = 0;
+	
+	      var _loop = function _loop() {
+	        var x = 16 * (0, _util.getRandomInt)(0, 25);
+	        var y = 20 * (0, _util.getRandomInt)(1, 25);
+	
+	        var collision = false;
+	        _this.sponges.forEach(function (sponge) {
+	          if (sponge.getX() === x && sponge.getY() === y) {
+	            collision = true;
+	          }
+	        });
+	
+	        if (!collision) {
+	          var sponge = new _sea_sponge2.default({ x: x, y: y });
+	          _this.addSeaSponge(sponge);
+	          spongesPlaced++;
+	        }
+	      };
+	
+	      while (spongesPlaced < numSponges) {
+	        _loop();
+	      }
+	    }
+	  }, {
+	    key: 'addPolychaete',
+	    value: function addPolychaete(length, velocityX) {
+	      var startLeft = Math.random() < .5;
+	
+	      var headX = void 0;
+	      var direction = void 0;
+	      var xIncrement = void 0;
+	      if (startLeft) {
+	        headX = 0;
+	        direction = _moving_object.RIGHT;
+	        xIncrement = -16;
+	      } else {
+	        headX = this.stage.canvas.width - 16;
+	        direction = _moving_object.LEFT;
+	        xIncrement = 16;
+	      }
+	
+	      var head = new _head2.default({ x: headX, direction: direction, velocityX: velocityX });
+	      this.addSegment(head);
+	
+	      var lastSegment = head;
+	      for (var i = 1; i < length; i++) {
+	        var segment = new _segment2.default({
+	          x: headX + xIncrement * i,
+	          direction: direction,
+	          velocityX: velocityX
+	        });
+	        lastSegment.connectNext(segment);
+	        this.addSegment(segment);
+	        lastSegment = segment;
+	      }
+	    }
+	  }, {
+	    key: 'addObject',
+	    value: function addObject(objects, object) {
+	      object.setStage(this.stage);
+	      this.stage.addChild(object.sprite);
+	      objects.push(object);
+	    }
+	  }, {
+	    key: 'addSegment',
+	    value: function addSegment(segment) {
+	      this.addObject(this.segments, segment);
+	    }
+	  }, {
+	    key: 'addSegmentToStart',
+	    value: function addSegmentToStart(segment) {
+	      segment.setStage(this.stage);
+	      this.stage.addChild(segment.sprite);
+	      this.segments.unshift(segment);
+	    }
+	  }, {
+	    key: 'addSeaSponge',
+	    value: function addSeaSponge(sponge) {
+	      this.addObject(this.sponges, sponge);
+	    }
+	  }, {
+	    key: 'addBubble',
+	    value: function addBubble(bubble) {
+	      this.addObject(this.bubbles, bubble);
+	      this.stage.setChildIndex(bubble.sprite, 1);
+	    }
+	  }, {
+	    key: 'addShrimp',
+	    value: function addShrimp(options) {
+	      var x = 16 * (0, _util.getRandomInt)(0, 25);
+	      var shrimp = new _shrimp2.default(Object.assign({ x: x }, options));
+	      this.addObject(this.shrimp, shrimp);
+	    }
+	  }, {
+	    key: 'addCrab',
+	    value: function addCrab(options) {
+	      var startLeft = Math.random() < .5;
+	      var x = void 0;
+	      var direction = void 0;
+	      if (startLeft) {
+	        x = -24;
+	        direction = _moving_object.RIGHT;
+	      } else {
+	        x = this.stage.canvas.width - 1;
+	        direction = _moving_object.LEFT;
+	      }
+	
+	      var y = (0, _util.getRandomInt)(0, 20) * 25;
+	
+	      this.crab = new _crab2.default(Object.assign({ x: x, y: y, direction: direction }, options));
+	      this.crab.setStage(this.stage);
+	      this.stage.addChild(this.crab.sprite);
+	    }
+	  }, {
+	    key: 'addLaserBeam',
+	    value: function addLaserBeam(beam) {
+	      this.addObject(this.laserBeams, beam);
+	    }
+	  }, {
+	    key: 'addBomb',
+	    value: function addBomb(bomb) {
+	      this.addObject(this.bombs, bomb);
+	    }
+	  }, {
+	    key: 'addExplosion',
+	    value: function addExplosion(explosion) {
+	      this.addObject(this.explosions, explosion);
+	    }
+	  }, {
+	    key: 'addScore',
+	    value: function addScore(score) {
+	      this.addObject(this.scores, score);
+	      this.stage.setChildIndex(score.sprite, this.stage.getNumChildren() - 1);
+	    }
+	  }, {
+	    key: 'fireLaser',
+	    value: function fireLaser() {
+	      this.addLaserBeam(this.diver.fireLaser());
+	    }
+	  }, {
+	    key: 'dropBomb',
+	    value: function dropBomb() {
+	      this.addBomb(this.diver.dropBomb());
+	    }
+	  }, {
+	    key: 'removeObjectAtIdx',
+	    value: function removeObjectAtIdx(objects, idx) {
+	      var object = objects[idx];
+	      this.stage.removeChild(object.sprite);
+	      object.destroy();
+	      objects.splice(idx, 1);
+	    }
+	  }, {
+	    key: 'removeObjects',
+	    value: function removeObjects(objects, idxsToRemove) {
+	      var _this2 = this;
+	
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        _this2.removeObjectAtIdx(objects, idx);
+	      });
+	    }
+	  }, {
+	    key: 'removeAllObjects',
+	    value: function removeAllObjects(objects) {
+	      while (objects.length > 0) {
+	        var object = objects.pop();
+	        this.stage.removeChild(object.sprite);
+	        object.destroy();
+	      }
+	    }
+	  }, {
+	    key: 'removeSeaSponges',
+	    value: function removeSeaSponges(idxsToRemove) {
+	      this.removeObjects(this.sponges, idxsToRemove);
+	    }
+	  }, {
+	    key: 'removeAllSeaSponges',
+	    value: function removeAllSeaSponges() {
+	      this.removeAllObjects(this.sponges);
+	    }
+	  }, {
+	    key: 'removeSegments',
+	    value: function removeSegments(idxsToRemove) {
+	      var _this3 = this;
+	
+	      var replace = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+	
+	      var segmentsToReplace = [];
+	      idxsToRemove.sort().reverse().forEach(function (idx) {
+	        var segment = _this3.segments[idx];
+	        if (replace) {
+	          var sponge = new _sea_sponge2.default({
+	            x: segment.getX(),
+	            y: segment.getY()
+	          });
+	          _this3.addSeaSponge(sponge);
+	        }
+	        if (segment.next) {
+	          segmentsToReplace.push(segment.next);
+	        }
+	
+	        _this3.removeObjectAtIdx(_this3.segments, idx);
+	      });
+	
+	      if (segmentsToReplace.length > 0) {
+	        this.replaceSegmentsWithHeads(segmentsToReplace);
+	      }
+	    }
+	  }, {
+	    key: 'replaceSegmentsWithHeads',
+	    value: function replaceSegmentsWithHeads(segmentsToReplace) {
+	      var _this4 = this;
+	
+	      segmentsToReplace.forEach(function (segment) {
+	        var idx = _this4.segments.indexOf(segment);
+	        _this4.stage.removeChild(segment.sprite);
+	        var newHead = _head2.default.createHeadFromSegment(segment);
+	        segment.destroy();
+	        _this4.segments.splice(idx, 1);
+	        // need to add head segments to the start of the segment array
+	        // so their position gets updated before their trailing segments
+	        _this4.addSegmentToStart(newHead);
+	      });
+	    }
+	  }, {
+	    key: 'removeAllSegments',
+	    value: function removeAllSegments() {
+	      this.removeAllObjects(this.segments);
+	    }
+	  }, {
+	    key: 'removeShrimp',
+	    value: function removeShrimp(idxsToRemove) {
+	      this.removeObjects(this.shrimp, idxsToRemove);
+	    }
+	  }, {
+	    key: 'removeAllShrimp',
+	    value: function removeAllShrimp() {
+	      this.removeAllObjects(this.shrimp);
+	    }
+	  }, {
+	    key: 'removeCrab',
+	    value: function removeCrab() {
+	      if (this.crab) {
+	        this.stage.removeChild(this.crab.sprite);
+	        this.crab.destroy();
+	        this.crab = null;
+	      }
+	    }
+	  }, {
+	    key: 'removeBubbles',
+	    value: function removeBubbles(idxsToRemove) {
+	      this.removeObjects(this.bubbles, idxsToRemove);
+	    }
+	  }, {
+	    key: 'removeLaserBeams',
+	    value: function removeLaserBeams(idxsToRemove) {
+	      this.removeObjects(this.laserBeams, idxsToRemove);
+	    }
+	  }, {
+	    key: 'removeAllLaserBeams',
+	    value: function removeAllLaserBeams() {
+	      this.removeAllObjects(this.laserBeams);
+	    }
+	  }, {
+	    key: 'removeBombs',
+	    value: function removeBombs(idxsToRemove) {
+	      this.removeObjects(this.bombs, idxsToRemove);
+	    }
+	  }, {
+	    key: 'removeAllBombs',
+	    value: function removeAllBombs() {
+	      this.removeAllObjects(this.bombs);
+	    }
+	  }, {
+	    key: 'removeExplosions',
+	    value: function removeExplosions(idxsToRemove) {
+	      this.removeObjects(this.explosions, idxsToRemove);
+	    }
+	  }, {
+	    key: 'removeAllExplosions',
+	    value: function removeAllExplosions() {
+	      this.removeAllObjects(this.explosions);
+	    }
+	  }, {
+	    key: 'removeScores',
+	    value: function removeScores(idxsToRemove) {
+	      this.removeObjects(this.scores, idxsToRemove);
+	    }
+	  }, {
+	    key: 'removeAllScores',
+	    value: function removeAllScores() {
+	      this.removeAllObjects(this.scores);
+	    }
+	  }, {
+	    key: 'pauseAnimations',
+	    value: function pauseAnimations(paused) {
+	      this.segments.forEach(function (segment) {
+	        segment.sprite.paused = paused;
+	      });
+	      this.explosions.forEach(function (explosion) {
+	        explosion.sprite.paused = paused;
+	      });
+	    }
+	  }]);
+	
+	  return Board;
+	}();
+	
+	exports.default = Board;
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.BUBBLE_SIZES = exports.BUBBLE_LARGE = exports.BUBBLE_MEDIUM = exports.BUBBLE_SMALL = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _BUBBLE_SHEETS, _BUBBLE_DIAMETERS, _BUBBLE_VELOCITIES;
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _moving_object = __webpack_require__(10);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+	
+	var BUBBLE_SMALL = exports.BUBBLE_SMALL = 'BUBBLE_SMALL';
+	var BUBBLE_MEDIUM = exports.BUBBLE_MEDIUM = 'BUBBLE_MEDIUM';
+	var BUBBLE_LARGE = exports.BUBBLE_LARGE = 'BUBBLE_LARGE';
+	
+	var BUBBLE_SIZES = exports.BUBBLE_SIZES = [BUBBLE_SMALL, BUBBLE_MEDIUM, BUBBLE_LARGE];
+	
+	var SMALL_BUBBLE_SHEET = (0, _sprite_sheets.createSmallBubbleSpriteSheet)();
+	var MEDIUM_BUBBLE_SHEET = (0, _sprite_sheets.createMediumBubbleSpriteSheet)();
+	var LARGE_BUBBLE_SHEET = (0, _sprite_sheets.createLargeBubbleSpriteSheet)();
+	
+	var BUBBLE_SHEETS = (_BUBBLE_SHEETS = {}, _defineProperty(_BUBBLE_SHEETS, BUBBLE_SMALL, SMALL_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_MEDIUM, MEDIUM_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_LARGE, LARGE_BUBBLE_SHEET), _BUBBLE_SHEETS);
+	
+	var BUBBLE_DIAMETERS = (_BUBBLE_DIAMETERS = {}, _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_SMALL, 16), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_MEDIUM, 32), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_LARGE, 64), _BUBBLE_DIAMETERS);
+	
+	var BUBBLE_VELOCITIES = (_BUBBLE_VELOCITIES = {}, _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_SMALL, -.5), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_MEDIUM, -.75), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_LARGE, -1), _BUBBLE_VELOCITIES);
+	
+	var Bubble = function (_MovingObject) {
+	  _inherits(Bubble, _MovingObject);
+	
+	  function Bubble(options) {
+	    _classCallCheck(this, Bubble);
+	
+	    var bubbleSize = options.bubbleSize || BUBBLE_SMALL;
+	    var bubbleSprite = new _createjs2.default.Sprite(BUBBLE_SHEETS[bubbleSize], 'default');
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: BUBBLE_DIAMETERS[bubbleSize],
+	      height: BUBBLE_DIAMETERS[bubbleSize],
+	      direction: _moving_object.UP,
+	      velocityY: BUBBLE_VELOCITIES[bubbleSize],
+	      velocityX: .5,
+	      sprite: bubbleSprite
+	    };
+	
+	    return _possibleConstructorReturn(this, (Bubble.__proto__ || Object.getPrototypeOf(Bubble)).call(this, Object.assign(defaultOptions, options)));
+	  }
+	
+	  _createClass(Bubble, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      if (Math.random() <= .005) {
+	        this.velocityX = -this.velocityX;
+	      }
+	      _moving_object2.default.prototype.updatePosition.call(this);
+	    }
+	  }]);
+	
+	  return Bubble;
+	}(_moving_object2.default);
+	
+	exports.default = Bubble;
+
+/***/ },
 /* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -1911,7 +2950,577 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _tone = __webpack_require__(22);
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _game_object = __webpack_require__(11);
+	
+	var _game_object2 = _interopRequireDefault(_game_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SEA_SPONGE_SHEET = (0, _sprite_sheets.createSeaSpongeSpriteSheet)();
+	
+	var SeaSponge = function (_GameObject) {
+	  _inherits(SeaSponge, _GameObject);
+	
+	  function SeaSponge(options) {
+	    _classCallCheck(this, SeaSponge);
+	
+	    var seaSpongeSprite = new _createjs2.default.Sprite(SEA_SPONGE_SHEET);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 16,
+	      height: 20,
+	      sprite: seaSpongeSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (SeaSponge.__proto__ || Object.getPrototypeOf(SeaSponge)).call(this, Object.assign(defaultOptions, options)));
+	
+	    if (options.snap) {
+	      _this.setX(Math.floor(_this.getX() / _this.getWidth()) * _this.getWidth());
+	      _this.setY(Math.floor(_this.getY() / _this.getHeight()) * _this.getHeight());
+	    }
+	
+	    _this.hits = 4;
+	    return _this;
+	  }
+	
+	  _createClass(SeaSponge, [{
+	    key: 'handleHit',
+	    value: function handleHit() {
+	      this.hits -= 1;
+	
+	      switch (this.hits) {
+	        case 3:
+	          this.sprite.gotoAndStop("oneHit");
+	          break;
+	        case 2:
+	          this.sprite.gotoAndStop("twoHits");
+	          break;
+	        case 1:
+	          this.sprite.gotoAndStop("threeHits");
+	          break;
+	      }
+	    }
+	  }]);
+	
+	  return SeaSponge;
+	}(_game_object2.default);
+	
+	exports.default = SeaSponge;
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.CRAB_MIN_VELOCITY = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(5);
+	
+	var _moving_object = __webpack_require__(10);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _diver = __webpack_require__(12);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var CRAB_SHEET = (0, _sprite_sheets.createCrabSpriteSheet)();
+	
+	var CRAB_MIN_VELOCITY = exports.CRAB_MIN_VELOCITY = 4;
+	
+	var Crab = function (_MovingObject) {
+	  _inherits(Crab, _MovingObject);
+	
+	  function Crab() {
+	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	
+	    _classCallCheck(this, Crab);
+	
+	    var crabSprite = new _createjs2.default.Sprite(CRAB_SHEET);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 25,
+	      height: 15,
+	      sprite: crabSprite
+	    };
+	
+	    var _this = _possibleConstructorReturn(this, (Crab.__proto__ || Object.getPrototypeOf(Crab)).call(this, Object.assign(defaultOptions, options)));
+	
+	    _this.maxVelocity = options.maxVelocity || CRAB_MIN_VELOCITY;
+	    _this.decisionPointX = _this.getX();
+	    _this.decisionPointY = _this.getY();
+	    return _this;
+	  }
+	
+	  _createClass(Crab, [{
+	    key: 'updatePosition',
+	    value: function updatePosition() {
+	      if (Math.abs(this.decisionPointX - this.getX()) <= Math.abs(this.velocityX) && Math.abs(this.decisionPointY - this.getY()) <= Math.abs(this.velocityY)) {
+	        this.updateDecisionPoint();
+	        this.updateVelocities();
+	      }
+	      this.changeX(this.velocityX);
+	      this.changeY(this.velocityY);
+	    }
+	  }, {
+	    key: 'updateDecisionPoint',
+	    value: function updateDecisionPoint() {
+	      var decisionXDelta = CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(10, 30);
+	      if (this.direction === _moving_object.LEFT) {
+	        this.decisionPointX = this.getX() - decisionXDelta;
+	      } else {
+	        this.decisionPointX = this.getX() + decisionXDelta;
+	      }
+	
+	      if (this.decisionPointY < _diver.DIVER_MIN_Y) {
+	        this.decisionPointY = _diver.DIVER_MIN_Y + CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(1, 50);
+	        if (this.decisionPointY > this.moveBounds.maxY) {
+	          this.decisionPointY = this.moveBounds.maxY - this.getHeight();
+	        }
+	      } else {
+	        this.decisionPointY = _diver.DIVER_MIN_Y - CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(20, 50);
+	      }
+	    }
+	  }, {
+	    key: 'updateVelocities',
+	    value: function updateVelocities() {
+	      var diffX = this.decisionPointX - this.getX();
+	      var diffY = this.decisionPointY - this.getY();
+	      var totalDelta = Math.sqrt(diffX * diffX + diffY * diffY);
+	
+	      var velocity = (0, _util.getRandomInt)(CRAB_MIN_VELOCITY, this.maxVelocity);
+	      this.velocityX = diffX / totalDelta * velocity;
+	      this.velocityY = diffY / totalDelta * velocity;
+	    }
+	  }]);
+	
+	  return Crab;
+	}(_moving_object2.default);
+	
+	exports.default = Crab;
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.SHRIMP_MIN_VELOCITY = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _createjs = __webpack_require__(1);
+	
+	var _createjs2 = _interopRequireDefault(_createjs);
+	
+	var _util = __webpack_require__(5);
+	
+	var _moving_object = __webpack_require__(10);
+	
+	var _moving_object2 = _interopRequireDefault(_moving_object);
+	
+	var _sprite_sheets = __webpack_require__(4);
+	
+	var _sea_sponge = __webpack_require__(21);
+	
+	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SHRIMP_MIN_VELOCITY = exports.SHRIMP_MIN_VELOCITY = 6;
+	
+	var SHRIMP_SHEET = (0, _sprite_sheets.createShrimpSpriteSheet)();
+	
+	var Shrimp = function (_MovingObject) {
+	  _inherits(Shrimp, _MovingObject);
+	
+	  function Shrimp() {
+	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	
+	    _classCallCheck(this, Shrimp);
+	
+	    var shrimpSprite = new _createjs2.default.Sprite(SHRIMP_SHEET);
+	
+	    var defaultOptions = {
+	      x: 0,
+	      y: 0,
+	      width: 16,
+	      height: 20,
+	      sprite: shrimpSprite
+	    };
+	
+	    return _possibleConstructorReturn(this, (Shrimp.__proto__ || Object.getPrototypeOf(Shrimp)).call(this, Object.assign(defaultOptions, options)));
+	  }
+	
+	  _createClass(Shrimp, [{
+	    key: 'dropSeaSponge',
+	    value: function dropSeaSponge() {
+	      return new _sea_sponge2.default({ x: this.getX(), y: this.getY(), snap: true });
+	    }
+	  }]);
+	
+	  return Shrimp;
+	}(_moving_object2.default);
+	
+	exports.default = Shrimp;
+
+/***/ },
+/* 24 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var UIHandler = function () {
+	  function UIHandler(game) {
+	    _classCallCheck(this, UIHandler);
+	
+	    this.game = game;
+	    this.currentScoreElement = document.getElementById('current-score');
+	    this.highScoreElement = document.getElementById('high-score');
+	    this.bombCountElement = document.getElementById('bomb-count');
+	    this.startGamePopup = document.getElementById('popup-start');
+	    this.startButton = document.getElementById('button-start');
+	    this.gameOverPopup = document.getElementById('popup-gameover');
+	    this.restartButton = document.getElementById('button-restart');
+	    this.gameOverScore = document.getElementById('gameover-score');
+	    this.gameOverHighScoreMessage = document.getElementById('gameover-high-score-message');
+	    this.aboutPopup = document.getElementById('popup-about');
+	    this.aboutButton = document.getElementById('button-about');
+	    this.aboutCloseButton = document.getElementById('button-about-close');
+	
+	    this.startGame = this.startGame.bind(this);
+	    this.toggleAboutPopup = this.toggleAboutPopup.bind(this);
+	
+	    this.startButton.addEventListener('click', this.startGame);
+	    this.restartButton.addEventListener('click', this.startGame);
+	    this.aboutButton.addEventListener('click', this.toggleAboutPopup);
+	    this.aboutCloseButton.addEventListener('click', this.toggleAboutPopup);
+	  }
+	
+	  _createClass(UIHandler, [{
+	    key: 'updateCurrentScore',
+	    value: function updateCurrentScore(newCurrentScore) {
+	      if (this.currentScoreElement) {
+	        this.currentScoreElement.innerText = newCurrentScore;
+	      }
+	    }
+	  }, {
+	    key: 'updateHighScore',
+	    value: function updateHighScore(newHighScore) {
+	      if (this.highScoreElement) {
+	        this.highScoreElement.innerText = newHighScore;
+	      }
+	    }
+	  }, {
+	    key: 'updateBombCount',
+	    value: function updateBombCount(newBombCount) {
+	      if (this.bombCountElement) {
+	        this.bombCountElement.innerText = newBombCount;
+	      }
+	    }
+	  }, {
+	    key: 'hideStartGamePopup',
+	    value: function hideStartGamePopup() {
+	      this.startGamePopup.className = "popup hidden";
+	    }
+	  }, {
+	    key: 'showGameOverPopup',
+	    value: function showGameOverPopup(newHighScore) {
+	      this.gameOverPopup.className = "popup";
+	      this.gameOverScore.innerText = this.currentScoreElement.innerText;
+	      if (newHighScore) {
+	        this.gameOverHighScoreMessage.innerText = "New High Score!";
+	      }
+	    }
+	  }, {
+	    key: 'hideGameOverPopup',
+	    value: function hideGameOverPopup() {
+	      this.gameOverPopup.className = "popup hidden";
+	    }
+	  }, {
+	    key: 'toggleAboutPopup',
+	    value: function toggleAboutPopup() {
+	      if (this.aboutPopup.className === "popup") {
+	        this.game.setPaused(false);
+	        this.aboutPopup.className = "popup hidden";
+	      } else {
+	        this.game.setPaused(true);
+	        this.aboutPopup.className = "popup";
+	      }
+	    }
+	  }, {
+	    key: 'startGame',
+	    value: function startGame() {
+	      this.game.initialize(true);
+	      this.hideStartGamePopup();
+	      this.hideGameOverPopup();
+	    }
+	  }]);
+	
+	  return UIHandler;
+	}();
+	
+	exports.default = UIHandler;
+
+/***/ },
+/* 25 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _diver = __webpack_require__(12);
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var KEYCODE_LEFT = 37,
+	    KEYCODE_A = 65,
+	    KEYCODE_RIGHT = 39,
+	    KEYCODE_D = 68,
+	    KEYCODE_UP = 38,
+	    KEYCODE_W = 87,
+	    KEYCODE_DOWN = 40,
+	    KEYCODE_S = 83,
+	    KEYCODE_SPACE = 32,
+	    KEYCODE_CMD_LEFT = 91,
+	    KEYCODE_CMD_RIGHT = 93,
+	    KEYCODE_CTRL = 17;
+	
+	var controlKeys = [KEYCODE_LEFT, KEYCODE_A, KEYCODE_RIGHT, KEYCODE_D, KEYCODE_UP, KEYCODE_W, KEYCODE_DOWN, KEYCODE_S, KEYCODE_SPACE];
+	
+	var BOMB_KEYS = new Set([KEYCODE_CMD_LEFT, KEYCODE_CMD_RIGHT, KEYCODE_CTRL]);
+	
+	var DIAG_MOVE_AMOUNT = Math.sqrt(_diver.DIVER_MOVE_AMOUNT * _diver.DIVER_MOVE_AMOUNT / 2);
+	var ACCELERATION_START = 0.25;
+	var ACCELERATION_INCREMENT = 0.25;
+	
+	var KeyHandler = function () {
+	  function KeyHandler(game, stage) {
+	    _classCallCheck(this, KeyHandler);
+	
+	    this.game = game;
+	    this.stage = stage;
+	    this.reset();
+	
+	    this.handleKeyDown = this.handleKeyDown.bind(this);
+	    this.handleKeyUp = this.handleKeyUp.bind(this);
+	    this.acceleration = ACCELERATION_START;
+	  }
+	
+	  _createClass(KeyHandler, [{
+	    key: 'reset',
+	    value: function reset() {
+	      var _this = this;
+	
+	      this.keysDown = {};
+	      controlKeys.forEach(function (key) {
+	        _this.keysDown[key] = false;
+	      });
+	    }
+	  }, {
+	    key: 'handleKeyDown',
+	    value: function handleKeyDown(e) {
+	      if (e.keyCode === KEYCODE_SPACE && !this.keysDown[e.keyCode]) {
+	        this.game.fireLaser();
+	      } else if (BOMB_KEYS.has(e.keyCode) && !this.keysDown[e.keyCode]) {
+	        this.game.dropBomb();
+	      }
+	      if (controlKeys.includes(e.keyCode)) {
+	        e.preventDefault();
+	        this.keysDown[e.keyCode] = true;
+	      }
+	    }
+	  }, {
+	    key: 'handleKeyUp',
+	    value: function handleKeyUp(e) {
+	      if (controlKeys.includes(e.keyCode)) {
+	        e.preventDefault();
+	        this.keysDown[e.keyCode] = false;
+	      }
+	    }
+	  }, {
+	    key: 'handleTick',
+	    value: function handleTick(e) {
+	      if (e.paused) return;
+	
+	      var diagMoveAmount = DIAG_MOVE_AMOUNT * this.acceleration;
+	      var moveAmount = _diver.DIVER_MOVE_AMOUNT * this.acceleration;
+	
+	      var move = false;
+	      var diagMove = false;
+	      if (this.leftUpPressed()) {
+	        this.game.moveDiver(-diagMoveAmount, -diagMoveAmount);
+	        diagMove = true;
+	      }
+	      if (this.rightUpPressed()) {
+	        this.game.moveDiver(diagMoveAmount, -diagMoveAmount);
+	        diagMove = true;
+	      }
+	      if (this.leftDownPressed()) {
+	        this.game.moveDiver(-diagMoveAmount, diagMoveAmount);
+	        diagMove = true;
+	      }
+	      if (this.rightDownPressed()) {
+	        this.game.moveDiver(diagMoveAmount, diagMoveAmount);
+	        diagMove = true;
+	      }
+	
+	      if (!diagMove) {
+	        if (this.leftPressed()) {
+	          this.game.moveDiver(-moveAmount, 0);
+	          move = true;
+	        }
+	        if (this.rightPressed()) {
+	          this.game.moveDiver(moveAmount, 0);
+	          move = true;
+	        }
+	
+	        if (this.upPressed()) {
+	          this.game.moveDiver(0, -moveAmount);
+	          move = true;
+	        }
+	
+	        if (this.downPressed()) {
+	          this.game.moveDiver(0, moveAmount);
+	          move = true;
+	        }
+	      }
+	
+	      if ((diagMove || move) && this.acceleration < 1) {
+	        this.acceleration += ACCELERATION_INCREMENT;
+	        if (this.acceleration > 1) this.acceleration = 1;
+	      } else if (!diagMove && !move) {
+	        this.acceleration = ACCELERATION_START;
+	      }
+	    }
+	  }, {
+	    key: 'leftPressed',
+	    value: function leftPressed() {
+	      return this.keysDown[KEYCODE_LEFT] || this.keysDown[KEYCODE_A];
+	    }
+	  }, {
+	    key: 'rightPressed',
+	    value: function rightPressed() {
+	      return this.keysDown[KEYCODE_RIGHT] || this.keysDown[KEYCODE_D];
+	    }
+	  }, {
+	    key: 'upPressed',
+	    value: function upPressed() {
+	      return this.keysDown[KEYCODE_UP] || this.keysDown[KEYCODE_W];
+	    }
+	  }, {
+	    key: 'downPressed',
+	    value: function downPressed() {
+	      return this.keysDown[KEYCODE_DOWN] || this.keysDown[KEYCODE_S];
+	    }
+	  }, {
+	    key: 'leftUpPressed',
+	    value: function leftUpPressed() {
+	      return this.leftPressed() && this.upPressed();
+	    }
+	  }, {
+	    key: 'rightUpPressed',
+	    value: function rightUpPressed() {
+	      return this.rightPressed() && this.upPressed();
+	    }
+	  }, {
+	    key: 'leftDownPressed',
+	    value: function leftDownPressed() {
+	      return this.leftPressed() && this.downPressed();
+	    }
+	  }, {
+	    key: 'rightDownPressed',
+	    value: function rightDownPressed() {
+	      return this.rightPressed() && this.downPressed();
+	    }
+	  }, {
+	    key: 'attachListeners',
+	    value: function attachListeners() {
+	      document.addEventListener('keydown', this.handleKeyDown);
+	      document.addEventListener('keyup', this.handleKeyUp);
+	    }
+	  }, {
+	    key: 'removeListeners',
+	    value: function removeListeners() {
+	      document.removeEventListener('keydown', this.handleKeyDown);
+	      document.removeEventListener('keyup', this.handleKeyUp);
+	    }
+	  }]);
+	
+	  return KeyHandler;
+	}();
+	
+	exports.default = KeyHandler;
+
+/***/ },
+/* 26 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _tone = __webpack_require__(27);
 	
 	var _tone2 = _interopRequireDefault(_tone);
 	
@@ -2189,7 +3798,7 @@
 	exports.default = SoundHandler;
 
 /***/ },
-/* 22 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function(root, factory){
@@ -24110,1736 +25719,6 @@
 		
 		return Tone;
 	}));
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _util = __webpack_require__(5);
-	
-	var _bubble = __webpack_require__(24);
-	
-	var _bubble2 = _interopRequireDefault(_bubble);
-	
-	var _diver = __webpack_require__(8);
-	
-	var _diver2 = _interopRequireDefault(_diver);
-	
-	var _head = __webpack_require__(16);
-	
-	var _head2 = _interopRequireDefault(_head);
-	
-	var _segment = __webpack_require__(17);
-	
-	var _segment2 = _interopRequireDefault(_segment);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _sea_sponge = __webpack_require__(25);
-	
-	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
-	
-	var _crab = __webpack_require__(26);
-	
-	var _crab2 = _interopRequireDefault(_crab);
-	
-	var _shrimp = __webpack_require__(27);
-	
-	var _shrimp2 = _interopRequireDefault(_shrimp);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var Board = function () {
-	  function Board(options) {
-	    _classCallCheck(this, Board);
-	
-	    this.stage = options.stage;
-	
-	    this.bubbles = [];
-	    this.laserBeams = [];
-	    this.bombs = [];
-	    this.explosions = [];
-	    this.segments = [];
-	    this.sponges = [];
-	    this.shrimp = [];
-	    this.crab = null;
-	    this.scores = [];
-	
-	    this.setBackground();
-	  }
-	
-	  _createClass(Board, [{
-	    key: 'reset',
-	    value: function reset() {
-	      this.removeDiver();
-	      this.removeAllLaserBeams();
-	      this.removeAllBombs();
-	      this.removeAllExplosions();
-	      this.removeAllSeaSponges();
-	      this.removeAllSegments();
-	      this.removeAllShrimp();
-	      this.removeCrab();
-	      this.removeAllScores();
-	    }
-	  }, {
-	    key: 'addDiver',
-	    value: function addDiver() {
-	      this.diver = new _diver2.default();
-	      this.diver.setStage(this.stage);
-	      this.stage.addChild(this.diver.sprite);
-	    }
-	  }, {
-	    key: 'removeDiver',
-	    value: function removeDiver() {
-	      if (this.diver) {
-	        this.stage.removeChild(this.diver.sprite);
-	        this.diver.destroy();
-	        this.diver = null;
-	      }
-	    }
-	  }, {
-	    key: 'setBackground',
-	    value: function setBackground() {
-	      var background = new _createjs2.default.Shape();
-	      background.graphics.beginFill('#002e9a').drawRect(0, 0, this.stage.canvas.width, this.stage.canvas.height);
-	      this.stage.addChild(background);
-	      this.stage.setChildIndex(background, 0);
-	      this.stage.update();
-	    }
-	  }, {
-	    key: 'addBubbles',
-	    value: function addBubbles(numBubbles) {
-	      var bubblesPlaced = 0;
-	
-	      while (bubblesPlaced < numBubbles) {
-	        var x = this.stage.canvas.width * Math.random();
-	        var y = this.stage.canvas.height * Math.random();
-	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
-	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
-	        this.addBubble(bubble);
-	        bubblesPlaced++;
-	      }
-	    }
-	  }, {
-	    key: 'addSeaSponges',
-	    value: function addSeaSponges(numSponges) {
-	      var _this = this;
-	
-	      var spongesPlaced = 0;
-	
-	      var _loop = function _loop() {
-	        var x = 16 * (0, _util.getRandomInt)(0, 25);
-	        var y = 20 * (0, _util.getRandomInt)(1, 25);
-	
-	        var collision = false;
-	        _this.sponges.forEach(function (sponge) {
-	          if (sponge.getX() === x && sponge.getY() === y) {
-	            collision = true;
-	          }
-	        });
-	
-	        if (!collision) {
-	          var sponge = new _sea_sponge2.default({ x: x, y: y });
-	          _this.addSeaSponge(sponge);
-	          spongesPlaced++;
-	        }
-	      };
-	
-	      while (spongesPlaced < numSponges) {
-	        _loop();
-	      }
-	    }
-	  }, {
-	    key: 'addPolychaete',
-	    value: function addPolychaete(length, velocityX) {
-	      var startLeft = Math.random() < .5;
-	
-	      var headX = void 0;
-	      var direction = void 0;
-	      var xIncrement = void 0;
-	      if (startLeft) {
-	        headX = 0;
-	        direction = _moving_object.RIGHT;
-	        xIncrement = -16;
-	      } else {
-	        headX = this.stage.canvas.width - 16;
-	        direction = _moving_object.LEFT;
-	        xIncrement = 16;
-	      }
-	
-	      var head = new _head2.default({ x: headX, direction: direction, velocityX: velocityX });
-	      this.addSegment(head);
-	
-	      var lastSegment = head;
-	      for (var i = 1; i < length; i++) {
-	        var segment = new _segment2.default({
-	          x: headX + xIncrement * i,
-	          direction: direction,
-	          velocityX: velocityX
-	        });
-	        lastSegment.connectNext(segment);
-	        this.addSegment(segment);
-	        lastSegment = segment;
-	      }
-	    }
-	  }, {
-	    key: 'addSegment',
-	    value: function addSegment(segment) {
-	      segment.setStage(this.stage);
-	      this.stage.addChild(segment.sprite);
-	      this.segments.push(segment);
-	    }
-	  }, {
-	    key: 'addSegmentToStart',
-	    value: function addSegmentToStart(segment) {
-	      segment.setStage(this.stage);
-	      this.stage.addChild(segment.sprite);
-	      this.segments.unshift(segment);
-	    }
-	  }, {
-	    key: 'addSeaSponge',
-	    value: function addSeaSponge(sponge) {
-	      sponge.setStage(this.stage);
-	      this.stage.addChild(sponge.sprite);
-	      this.sponges.push(sponge);
-	    }
-	  }, {
-	    key: 'addBubble',
-	    value: function addBubble(bubble) {
-	      bubble.setStage(this.stage);
-	      this.stage.addChild(bubble.sprite);
-	      this.stage.setChildIndex(bubble.sprite, 1);
-	      this.bubbles.push(bubble);
-	    }
-	  }, {
-	    key: 'addShrimp',
-	    value: function addShrimp(options) {
-	      var x = 16 * (0, _util.getRandomInt)(0, 25);
-	      var shrimp = new _shrimp2.default(Object.assign({ x: x }, options));
-	      shrimp.setStage(this.stage);
-	      this.stage.addChild(shrimp.sprite);
-	      this.shrimp.push(shrimp);
-	    }
-	  }, {
-	    key: 'addCrab',
-	    value: function addCrab(options) {
-	      var startLeft = Math.random() < .5;
-	      var x = void 0;
-	      var direction = void 0;
-	      if (startLeft) {
-	        x = -24;
-	        direction = _moving_object.RIGHT;
-	      } else {
-	        x = this.stage.canvas.width - 1;
-	        direction = _moving_object.LEFT;
-	      }
-	
-	      var y = (0, _util.getRandomInt)(0, 20) * 25;
-	
-	      this.crab = new _crab2.default(Object.assign({ x: x, y: y, direction: direction }, options));
-	      this.crab.setStage(this.stage);
-	      this.stage.addChild(this.crab.sprite);
-	    }
-	  }, {
-	    key: 'addLaserBeam',
-	    value: function addLaserBeam(beam) {
-	      beam.setStage(this.stage);
-	      this.stage.addChild(beam.sprite);
-	      this.laserBeams.push(beam);
-	    }
-	  }, {
-	    key: 'addBomb',
-	    value: function addBomb(bomb) {
-	      bomb.setStage(this.stage);
-	      this.stage.addChild(bomb.sprite);
-	      this.bombs.push(bomb);
-	    }
-	  }, {
-	    key: 'addExplosion',
-	    value: function addExplosion(explosion) {
-	      explosion.setStage(this.stage);
-	      this.stage.addChild(explosion.sprite);
-	      this.explosions.push(explosion);
-	    }
-	  }, {
-	    key: 'addScore',
-	    value: function addScore(score) {
-	      score.setStage(this.stage);
-	      this.stage.addChild(score.sprite);
-	      this.stage.setChildIndex(score.sprite, this.stage.getNumChildren() - 1);
-	      this.scores.push(score);
-	    }
-	  }, {
-	    key: 'fireLaser',
-	    value: function fireLaser() {
-	      this.addLaserBeam(this.diver.fireLaser());
-	    }
-	  }, {
-	    key: 'dropBomb',
-	    value: function dropBomb() {
-	      this.addBomb(this.diver.dropBomb());
-	    }
-	  }, {
-	    key: 'removeSeaSpongeAtIdx',
-	    value: function removeSeaSpongeAtIdx(idx) {
-	      var sponge = this.sponges[idx];
-	      this.stage.removeChild(sponge.sprite);
-	      sponge.destroy();
-	      this.sponges.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeSeaSponges',
-	    value: function removeSeaSponges(idxsToRemove) {
-	      var _this2 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this2.removeSeaSpongeAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeAllSeaSponges',
-	    value: function removeAllSeaSponges() {
-	      var _this3 = this;
-	
-	      this.sponges.forEach(function (sponge) {
-	        _this3.stage.removeChild(sponge.sprite);
-	        sponge.destroy();
-	      });
-	      this.sponges = [];
-	    }
-	  }, {
-	    key: 'removeSegmentAtIdx',
-	    value: function removeSegmentAtIdx(idx) {
-	      var segment = this.segments[idx];
-	      this.stage.removeChild(segment.sprite);
-	      segment.destroy();
-	      this.segments.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeSegments',
-	    value: function removeSegments(idxsToRemove) {
-	      var _this4 = this;
-	
-	      var replace = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-	
-	      var segmentsToReplace = [];
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        var segment = _this4.segments[idx];
-	        if (replace) {
-	          var sponge = new _sea_sponge2.default({
-	            x: segment.getX(),
-	            y: segment.getY()
-	          });
-	          _this4.addSeaSponge(sponge);
-	        }
-	        if (segment.next) {
-	          segmentsToReplace.push(segment.next);
-	        }
-	
-	        _this4.removeSegmentAtIdx(idx);
-	      });
-	
-	      if (segmentsToReplace.length > 0) {
-	        this.replaceSegmentsWithHeads(segmentsToReplace);
-	      }
-	    }
-	  }, {
-	    key: 'replaceSegmentsWithHeads',
-	    value: function replaceSegmentsWithHeads(segmentsToReplace) {
-	      var _this5 = this;
-	
-	      segmentsToReplace.forEach(function (segment) {
-	        var idx = _this5.segments.indexOf(segment);
-	        _this5.stage.removeChild(segment.sprite);
-	        var newHead = _head2.default.createHeadFromSegment(segment);
-	        segment.destroy();
-	        _this5.segments.splice(idx, 1);
-	        // need to add head segments to the start of the segment array
-	        // so their position gets updated before their trailing segments
-	        _this5.addSegmentToStart(newHead);
-	      });
-	    }
-	  }, {
-	    key: 'removeAllSegments',
-	    value: function removeAllSegments() {
-	      var _this6 = this;
-	
-	      this.segments.forEach(function (segment) {
-	        _this6.stage.removeChild(segment.sprite);
-	        segment.destroy();
-	      });
-	      this.segments = [];
-	    }
-	  }, {
-	    key: 'removeShrimpAtIdx',
-	    value: function removeShrimpAtIdx(idx) {
-	      var shrimp = this.shrimp[idx];
-	      this.stage.removeChild(shrimp.sprite);
-	      shrimp.destroy();
-	      this.shrimp.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeShrimp',
-	    value: function removeShrimp(idxsToRemove) {
-	      var _this7 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this7.removeShrimpAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeAllShrimp',
-	    value: function removeAllShrimp() {
-	      var _this8 = this;
-	
-	      this.shrimp.forEach(function (shrimp) {
-	        _this8.stage.removeChild(shrimp.sprite);
-	        shrimp.destroy();
-	      });
-	      this.shrimp = [];
-	    }
-	  }, {
-	    key: 'removeCrab',
-	    value: function removeCrab() {
-	      if (this.crab) {
-	        this.stage.removeChild(this.crab.sprite);
-	        this.crab.destroy();
-	        this.crab = null;
-	      }
-	    }
-	  }, {
-	    key: 'removeBubbleAtIdx',
-	    value: function removeBubbleAtIdx(idx) {
-	      var bubble = this.bubbles[idx];
-	      this.stage.removeChild(bubble.sprite);
-	      bubble.destroy();
-	      this.bubbles.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeBubbles',
-	    value: function removeBubbles(idxsToRemove) {
-	      var _this9 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this9.removeBubbleAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeLaserBeamAtIdx',
-	    value: function removeLaserBeamAtIdx(idx) {
-	      var laserBeam = this.laserBeams[idx];
-	      this.stage.removeChild(laserBeam.sprite);
-	      laserBeam.destroy();
-	      this.laserBeams.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeLaserBeams',
-	    value: function removeLaserBeams(idxsToRemove) {
-	      var _this10 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this10.removeLaserBeamAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeAllLaserBeams',
-	    value: function removeAllLaserBeams() {
-	      var _this11 = this;
-	
-	      this.laserBeams.forEach(function (beam) {
-	        _this11.stage.removeChild(beam.sprite);
-	        beam.destroy();
-	      });
-	      this.laserBeams = [];
-	    }
-	  }, {
-	    key: 'removeBombAtIdx',
-	    value: function removeBombAtIdx(idx) {
-	      var bomb = this.bombs[idx];
-	      this.stage.removeChild(bomb.sprite);
-	      bomb.destroy();
-	      this.bombs.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeBombs',
-	    value: function removeBombs(idxsToRemove) {
-	      var _this12 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this12.removeBombAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeAllBombs',
-	    value: function removeAllBombs() {
-	      var _this13 = this;
-	
-	      this.bombs.forEach(function (bomb) {
-	        _this13.stage.removeChild(bomb.sprite);
-	        bomb.destroy();
-	      });
-	      this.bombs = [];
-	    }
-	  }, {
-	    key: 'removeExplosionAtIdx',
-	    value: function removeExplosionAtIdx(idx) {
-	      var explosion = this.explosions[idx];
-	      this.stage.removeChild(explosion.sprite);
-	      explosion.destroy();
-	      this.explosions.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeExplosions',
-	    value: function removeExplosions(idxsToRemove) {
-	      var _this14 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this14.removeExplosionAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeAllExplosions',
-	    value: function removeAllExplosions() {
-	      var _this15 = this;
-	
-	      this.explosions.forEach(function (explosion) {
-	        _this15.stage.removeChild(explosion.sprite);
-	        explosion.destroy();
-	      });
-	      this.explosions = [];
-	    }
-	  }, {
-	    key: 'removeScoreAtIdx',
-	    value: function removeScoreAtIdx(idx) {
-	      var score = this.scores[idx];
-	      this.stage.removeChild(score.sprite);
-	      score.destroy();
-	      this.scores.splice(idx, 1);
-	    }
-	  }, {
-	    key: 'removeScores',
-	    value: function removeScores(idxsToRemove) {
-	      var _this16 = this;
-	
-	      idxsToRemove.sort().reverse().forEach(function (idx) {
-	        _this16.removeScoreAtIdx(idx);
-	      });
-	    }
-	  }, {
-	    key: 'removeAllScores',
-	    value: function removeAllScores() {
-	      var _this17 = this;
-	
-	      this.scores.forEach(function (score) {
-	        _this17.stage.removeChild(score.sprite);
-	        score.destroy();
-	      });
-	      this.scores = [];
-	    }
-	  }, {
-	    key: 'pauseAnimations',
-	    value: function pauseAnimations(paused) {
-	      this.segments.forEach(function (segment) {
-	        segment.sprite.paused = paused;
-	      });
-	      this.explosions.forEach(function (explosion) {
-	        explosion.sprite.paused = paused;
-	      });
-	    }
-	  }]);
-	
-	  return Board;
-	}();
-	
-	exports.default = Board;
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.BUBBLE_SIZES = exports.BUBBLE_LARGE = exports.BUBBLE_MEDIUM = exports.BUBBLE_SMALL = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _BUBBLE_SHEETS, _BUBBLE_DIAMETERS, _BUBBLE_VELOCITIES;
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _moving_object2 = _interopRequireDefault(_moving_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-	
-	var BUBBLE_SMALL = exports.BUBBLE_SMALL = 'BUBBLE_SMALL';
-	var BUBBLE_MEDIUM = exports.BUBBLE_MEDIUM = 'BUBBLE_MEDIUM';
-	var BUBBLE_LARGE = exports.BUBBLE_LARGE = 'BUBBLE_LARGE';
-	
-	var BUBBLE_SIZES = exports.BUBBLE_SIZES = [BUBBLE_SMALL, BUBBLE_MEDIUM, BUBBLE_LARGE];
-	
-	var SMALL_BUBBLE_SHEET = (0, _sprite_sheets.createSmallBubbleSpriteSheet)();
-	var MEDIUM_BUBBLE_SHEET = (0, _sprite_sheets.createMediumBubbleSpriteSheet)();
-	var LARGE_BUBBLE_SHEET = (0, _sprite_sheets.createLargeBubbleSpriteSheet)();
-	
-	var BUBBLE_SHEETS = (_BUBBLE_SHEETS = {}, _defineProperty(_BUBBLE_SHEETS, BUBBLE_SMALL, SMALL_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_MEDIUM, MEDIUM_BUBBLE_SHEET), _defineProperty(_BUBBLE_SHEETS, BUBBLE_LARGE, LARGE_BUBBLE_SHEET), _BUBBLE_SHEETS);
-	
-	var BUBBLE_DIAMETERS = (_BUBBLE_DIAMETERS = {}, _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_SMALL, 16), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_MEDIUM, 32), _defineProperty(_BUBBLE_DIAMETERS, BUBBLE_LARGE, 64), _BUBBLE_DIAMETERS);
-	
-	var BUBBLE_VELOCITIES = (_BUBBLE_VELOCITIES = {}, _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_SMALL, -.5), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_MEDIUM, -.75), _defineProperty(_BUBBLE_VELOCITIES, BUBBLE_LARGE, -1), _BUBBLE_VELOCITIES);
-	
-	var Bubble = function (_MovingObject) {
-	  _inherits(Bubble, _MovingObject);
-	
-	  function Bubble(options) {
-	    _classCallCheck(this, Bubble);
-	
-	    var bubbleSize = options.bubbleSize || BUBBLE_SMALL;
-	    var bubbleSprite = new _createjs2.default.Sprite(BUBBLE_SHEETS[bubbleSize], 'default');
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: BUBBLE_DIAMETERS[bubbleSize],
-	      height: BUBBLE_DIAMETERS[bubbleSize],
-	      direction: _moving_object.UP,
-	      velocityY: BUBBLE_VELOCITIES[bubbleSize],
-	      velocityX: .5,
-	      sprite: bubbleSprite
-	    };
-	
-	    return _possibleConstructorReturn(this, (Bubble.__proto__ || Object.getPrototypeOf(Bubble)).call(this, Object.assign(defaultOptions, options)));
-	  }
-	
-	  _createClass(Bubble, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      if (Math.random() <= .005) {
-	        this.velocityX = -this.velocityX;
-	      }
-	      _moving_object2.default.prototype.updatePosition.call(this);
-	    }
-	  }]);
-	
-	  return Bubble;
-	}(_moving_object2.default);
-	
-	exports.default = Bubble;
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _game_object = __webpack_require__(9);
-	
-	var _game_object2 = _interopRequireDefault(_game_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var SEA_SPONGE_SHEET = (0, _sprite_sheets.createSeaSpongeSpriteSheet)();
-	
-	var SeaSponge = function (_GameObject) {
-	  _inherits(SeaSponge, _GameObject);
-	
-	  function SeaSponge(options) {
-	    _classCallCheck(this, SeaSponge);
-	
-	    var seaSpongeSprite = new _createjs2.default.Sprite(SEA_SPONGE_SHEET);
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: 16,
-	      height: 20,
-	      sprite: seaSpongeSprite
-	    };
-	
-	    var _this = _possibleConstructorReturn(this, (SeaSponge.__proto__ || Object.getPrototypeOf(SeaSponge)).call(this, Object.assign(defaultOptions, options)));
-	
-	    if (options.snap) {
-	      _this.setX(Math.floor(_this.getX() / _this.getWidth()) * _this.getWidth());
-	      _this.setY(Math.floor(_this.getY() / _this.getHeight()) * _this.getHeight());
-	    }
-	
-	    _this.hits = 4;
-	    return _this;
-	  }
-	
-	  _createClass(SeaSponge, [{
-	    key: 'handleHit',
-	    value: function handleHit() {
-	      this.hits -= 1;
-	
-	      switch (this.hits) {
-	        case 3:
-	          this.sprite.gotoAndStop("oneHit");
-	          break;
-	        case 2:
-	          this.sprite.gotoAndStop("twoHits");
-	          break;
-	        case 1:
-	          this.sprite.gotoAndStop("threeHits");
-	          break;
-	      }
-	    }
-	  }]);
-	
-	  return SeaSponge;
-	}(_game_object2.default);
-	
-	exports.default = SeaSponge;
-
-/***/ },
-/* 26 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.CRAB_MIN_VELOCITY = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _util = __webpack_require__(5);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _moving_object2 = _interopRequireDefault(_moving_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _diver = __webpack_require__(8);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var CRAB_SHEET = (0, _sprite_sheets.createCrabSpriteSheet)();
-	
-	var CRAB_MIN_VELOCITY = exports.CRAB_MIN_VELOCITY = 4;
-	
-	var Crab = function (_MovingObject) {
-	  _inherits(Crab, _MovingObject);
-	
-	  function Crab() {
-	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-	
-	    _classCallCheck(this, Crab);
-	
-	    var crabSprite = new _createjs2.default.Sprite(CRAB_SHEET);
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: 25,
-	      height: 15,
-	      sprite: crabSprite
-	    };
-	
-	    var _this = _possibleConstructorReturn(this, (Crab.__proto__ || Object.getPrototypeOf(Crab)).call(this, Object.assign(defaultOptions, options)));
-	
-	    _this.maxVelocity = options.maxVelocity || CRAB_MIN_VELOCITY;
-	    _this.decisionPointX = _this.getX();
-	    _this.decisionPointY = _this.getY();
-	    return _this;
-	  }
-	
-	  _createClass(Crab, [{
-	    key: 'updatePosition',
-	    value: function updatePosition() {
-	      if (Math.abs(this.decisionPointX - this.getX()) <= Math.abs(this.velocityX) && Math.abs(this.decisionPointY - this.getY()) <= Math.abs(this.velocityY)) {
-	        this.updateDecisionPoint();
-	        this.updateVelocities();
-	      }
-	      this.changeX(this.velocityX);
-	      this.changeY(this.velocityY);
-	    }
-	  }, {
-	    key: 'updateDecisionPoint',
-	    value: function updateDecisionPoint() {
-	      var decisionXDelta = CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(10, 30);
-	      if (this.direction === _moving_object.LEFT) {
-	        this.decisionPointX = this.getX() - decisionXDelta;
-	      } else {
-	        this.decisionPointX = this.getX() + decisionXDelta;
-	      }
-	
-	      if (this.decisionPointY < _diver.DIVER_MIN_Y) {
-	        this.decisionPointY = _diver.DIVER_MIN_Y + CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(1, 50);
-	        if (this.decisionPointY > this.moveBounds.maxY) {
-	          this.decisionPointY = this.moveBounds.maxY - this.getHeight();
-	        }
-	      } else {
-	        this.decisionPointY = _diver.DIVER_MIN_Y - CRAB_MIN_VELOCITY * (0, _util.getRandomInt)(20, 50);
-	      }
-	    }
-	  }, {
-	    key: 'updateVelocities',
-	    value: function updateVelocities() {
-	      var diffX = this.decisionPointX - this.getX();
-	      var diffY = this.decisionPointY - this.getY();
-	      var totalDelta = Math.sqrt(diffX * diffX + diffY * diffY);
-	
-	      var velocity = (0, _util.getRandomInt)(CRAB_MIN_VELOCITY, this.maxVelocity);
-	      this.velocityX = diffX / totalDelta * velocity;
-	      this.velocityY = diffY / totalDelta * velocity;
-	    }
-	  }]);
-	
-	  return Crab;
-	}(_moving_object2.default);
-	
-	exports.default = Crab;
-
-/***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.SHRIMP_MIN_VELOCITY = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _util = __webpack_require__(5);
-	
-	var _moving_object = __webpack_require__(11);
-	
-	var _moving_object2 = _interopRequireDefault(_moving_object);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _sea_sponge = __webpack_require__(25);
-	
-	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var SHRIMP_MIN_VELOCITY = exports.SHRIMP_MIN_VELOCITY = 6;
-	
-	var SHRIMP_SHEET = (0, _sprite_sheets.createShrimpSpriteSheet)();
-	
-	var Shrimp = function (_MovingObject) {
-	  _inherits(Shrimp, _MovingObject);
-	
-	  function Shrimp() {
-	    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-	
-	    _classCallCheck(this, Shrimp);
-	
-	    var shrimpSprite = new _createjs2.default.Sprite(SHRIMP_SHEET);
-	
-	    var defaultOptions = {
-	      x: 0,
-	      y: 0,
-	      width: 16,
-	      height: 20,
-	      sprite: shrimpSprite
-	    };
-	
-	    return _possibleConstructorReturn(this, (Shrimp.__proto__ || Object.getPrototypeOf(Shrimp)).call(this, Object.assign(defaultOptions, options)));
-	  }
-	
-	  _createClass(Shrimp, [{
-	    key: 'dropSeaSponge',
-	    value: function dropSeaSponge() {
-	      return new _sea_sponge2.default({ x: this.getX(), y: this.getY(), snap: true });
-	    }
-	  }]);
-	
-	  return Shrimp;
-	}(_moving_object2.default);
-	
-	exports.default = Shrimp;
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _createjs = __webpack_require__(1);
-	
-	var _createjs2 = _interopRequireDefault(_createjs);
-	
-	var _jsCookie = __webpack_require__(3);
-	
-	var _jsCookie2 = _interopRequireDefault(_jsCookie);
-	
-	var _sprite_sheets = __webpack_require__(4);
-	
-	var _util = __webpack_require__(5);
-	
-	var _position_handler = __webpack_require__(29);
-	
-	var _position_handler2 = _interopRequireDefault(_position_handler);
-	
-	var _collision_handler = __webpack_require__(30);
-	
-	var _collision_handler2 = _interopRequireDefault(_collision_handler);
-	
-	var _board = __webpack_require__(23);
-	
-	var _board2 = _interopRequireDefault(_board);
-	
-	var _ui_handler = __webpack_require__(6);
-	
-	var _ui_handler2 = _interopRequireDefault(_ui_handler);
-	
-	var _key_handler = __webpack_require__(7);
-	
-	var _key_handler2 = _interopRequireDefault(_key_handler);
-	
-	var _sound_handler = __webpack_require__(21);
-	
-	var _sound_handler2 = _interopRequireDefault(_sound_handler);
-	
-	var _bubble = __webpack_require__(24);
-	
-	var _bubble2 = _interopRequireDefault(_bubble);
-	
-	var _head = __webpack_require__(16);
-	
-	var _head2 = _interopRequireDefault(_head);
-	
-	var _segment = __webpack_require__(17);
-	
-	var _sea_sponge = __webpack_require__(25);
-	
-	var _sea_sponge2 = _interopRequireDefault(_sea_sponge);
-	
-	var _crab = __webpack_require__(26);
-	
-	var _shrimp = __webpack_require__(27);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var HIGH_SCORE_COOKIE = 'polychaete-high-score';
-	var INITIAL_BOMB_COUNT = 1;
-	var MAX_BOMB_COUNT = 3;
-	var NEXT_BOMB_INCREMENT = 2500;
-	
-	var Game = function () {
-	  function Game(options) {
-	    _classCallCheck(this, Game);
-	
-	    this.stage = options.stage;
-	    this.board = new _board2.default(options);
-	    this.uiHandler = new _ui_handler2.default(this);
-	    this.keyHandler = new _key_handler2.default(this);
-	    this.soundHandler = new _sound_handler2.default();
-	    this.positionHandler = new _position_handler2.default(this);
-	    this.collisionHandler = new _collision_handler2.default(this);
-	    this.initialStartLength = options.initialStartLength || 12;
-	    this.started = false;
-	
-	    var cookieHighScore = _jsCookie2.default.get(HIGH_SCORE_COOKIE);
-	    this.updateHighScore(cookieHighScore ? parseInt(cookieHighScore) : 0);
-	
-	    this.keyHandler.attachListeners();
-	    this.board.addBubbles(20);
-	
-	    this.tick = this.tick.bind(this);
-	  }
-	
-	  _createClass(Game, [{
-	    key: 'initialize',
-	    value: function initialize(startGame) {
-	      this.startLength = this.initialStartLength;
-	      this.level = 0;
-	      this.currentScore = 0;
-	      this.newHighScore = false;
-	      this.uiHandler.updateCurrentScore(this.currentScore);
-	      this.bombCount = INITIAL_BOMB_COUNT;
-	      this.nextBombScore = NEXT_BOMB_INCREMENT;
-	      this.uiHandler.updateBombCount(this.bombCount);
-	
-	      var board = this.board;
-	      board.reset();
-	      if (startGame) {
-	        board.addDiver();
-	        this.started = true;
-	        this.soundHandler.pause(false);
-	      }
-	      board.addSeaSponges(30);
-	      board.addPolychaete(this.startLength, _segment.INITIAL_VELOCITY_X);
-	
-	      this.paused = false;
-	      _createjs2.default.Ticker.paused = false;
-	    }
-	  }, {
-	    key: 'run',
-	    value: function run() {
-	      _createjs2.default.Ticker.setFPS(_sprite_sheets.FPS);
-	      _createjs2.default.Ticker.on("tick", this.stage);
-	      _createjs2.default.Ticker.on("tick", this.tick);
-	    }
-	  }, {
-	    key: 'tick',
-	    value: function tick(e) {
-	      this.keyHandler.handleTick(e);
-	      this.collisionHandler.checkCollisions(e);
-	      this.positionHandler.updatePositions(e);
-	      this.playSegmentStep(e);
-	      this.tickBombs(e);
-	      this.tickExplosions(e);
-	      this.tryAddBubble(e);
-	      this.tryAddCrab(e);
-	      this.tryAddShrimp(e);
-	      this.checkSounds();
-	    }
-	  }, {
-	    key: 'moveDiver',
-	    value: function moveDiver(xDiff, yDiff) {
-	      if (!this.started || this.paused) return;
-	
-	      var board = this.board;
-	      var diver = board.diver;
-	      var blocked = false;
-	      diver.changeBoundedPos(xDiff, yDiff);
-	      board.sponges.forEach(function (sponge) {
-	        if (sponge.overlaps(diver)) {
-	          blocked = true;
-	        }
-	      });
-	      if (blocked) diver.changeBoundedPos(-xDiff, -yDiff);
-	    }
-	  }, {
-	    key: 'fireLaser',
-	    value: function fireLaser() {
-	      if (!this.started || this.paused) return;
-	      this.board.fireLaser();
-	      this.soundHandler.playLaserSound();
-	    }
-	  }, {
-	    key: 'incrementBombCount',
-	    value: function incrementBombCount() {
-	      if (this.bombCount < MAX_BOMB_COUNT) {
-	        this.uiHandler.updateBombCount(++this.bombCount);
-	        this.soundHandler.playBombIncrement();
-	      }
-	    }
-	  }, {
-	    key: 'dropBomb',
-	    value: function dropBomb() {
-	      if (!this.started || this.paused) return;
-	      if (this.bombCount > 0) {
-	        this.board.dropBomb();
-	        this.uiHandler.updateBombCount(--this.bombCount);
-	      }
-	    }
-	  }, {
-	    key: 'playSegmentStep',
-	    value: function playSegmentStep(e) {
-	      if (e.paused) return;
-	      var segments = this.board.segments;
-	      if (segments.length > 0 && this.started) {
-	        var maxVelocity = segments.reduce(function (a, b) {
-	          return a.velocityX > b.velocityX ? a.velocityX : b.velocityX;
-	        }, this);
-	        if (_createjs2.default.Ticker.getTicks() % Math.round(32 / maxVelocity) === 0) {
-	          this.soundHandler.playSegmentStep();
-	        }
-	      }
-	    }
-	  }, {
-	    key: 'tickBombs',
-	    value: function tickBombs(e) {
-	      var _this = this;
-	
-	      if (e.paused) return;
-	      var bombIdxsToRemove = [];
-	      this.board.bombs.forEach(function (bomb, idx) {
-	        bomb.tickDown();
-	        if (bomb.ticks === 0) {
-	          _this.board.addExplosion(bomb.explode());
-	          bombIdxsToRemove.push(idx);
-	          _this.soundHandler.playExplosionNoise();
-	        }
-	      });
-	
-	      this.board.removeBombs(bombIdxsToRemove);
-	    }
-	  }, {
-	    key: 'tickExplosions',
-	    value: function tickExplosions(e) {
-	      if (e.paused) return;
-	      var explosionIdxsToRemove = [];
-	      this.board.explosions.forEach(function (explosion, idx) {
-	        explosion.tickDown();
-	        if (explosion.ticks === 0) {
-	          explosionIdxsToRemove.push(idx);
-	        }
-	      });
-	
-	      this.board.removeExplosions(explosionIdxsToRemove);
-	    }
-	  }, {
-	    key: 'tryAddBubble',
-	    value: function tryAddBubble(e) {
-	      if (e.paused) return;
-	      var board = this.board;
-	      if (_createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
-	        var x = this.stage.canvas.width * Math.random();
-	        var y = this.stage.canvas.height;
-	        var bubbleSize = _bubble.BUBBLE_SIZES[Math.floor(Math.random() * 3)];
-	        var bubble = new _bubble2.default({ x: x, y: y, bubbleSize: bubbleSize });
-	        board.addBubble(bubble);
-	      }
-	    }
-	  }, {
-	    key: 'tryAddPolychaete',
-	    value: function tryAddPolychaete() {
-	      var _this2 = this;
-	
-	      var board = this.board;
-	
-	      if (board.segments.length === 0) {
-	        (function () {
-	          _this2.startLength -= 1;
-	          if (_this2.startLength === 0) {
-	            _this2.startLength = _this2.initialStartLength;
-	          }
-	          if (_this2.level < 6 && _this2.startLength % 3 === 0) {
-	            _this2.level += 1;
-	            _this2.soundHandler.incrementBPM(10);
-	          }
-	          var velocityX = _segment.INITIAL_VELOCITY_X + _this2.level;
-	          board.addPolychaete(_this2.startLength, velocityX);
-	          if (_this2.startLength !== _this2.initialStartLength) {
-	            window.setTimeout(function () {
-	              board.addPolychaete(1, velocityX + 1);
-	            }, Math.random() * 1000 + 500);
-	          }
-	        })();
-	      }
-	    }
-	  }, {
-	    key: 'tryAddCrab',
-	    value: function tryAddCrab(e) {
-	      if (e.paused) return;
-	      var board = this.board;
-	      if (this.started && !board.crab && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === 0) {
-	        var random = (0, _util.getRandomInt)(0, 8);
-	        if (random <= this.level) {
-	          board.addCrab({
-	            maximumVelocity: _crab.CRAB_MIN_VELOCITY + 2 * this.level
-	          });
-	          this.soundHandler.startCrabSequence();
-	        }
-	      }
-	    }
-	  }, {
-	    key: 'tryAddShrimp',
-	    value: function tryAddShrimp(e) {
-	      if (e.paused) return;
-	      var board = this.board;
-	      if (this.started && _createjs2.default.Ticker.getTicks() % (_sprite_sheets.FPS / 2) === _sprite_sheets.FPS / 4) {
-	        var random = (0, _util.getRandomInt)(0, 8);
-	        if (random <= this.level) {
-	          board.addShrimp({
-	            velocityY: _shrimp.SHRIMP_MIN_VELOCITY + this.level
-	          });
-	          this.soundHandler.startShrimpOscillator(this.level);
-	        }
-	      }
-	    }
-	  }, {
-	    key: 'checkSounds',
-	    value: function checkSounds() {
-	      if (this.soundHandler.shrimpOscillatorPlaying && this.board.shrimp.length === 0) {
-	        this.soundHandler.stopShrimpOscillator();
-	      }
-	      if (this.soundHandler.crabSequencePlaying && !this.board.crab) {
-	        this.soundHandler.stopCrabSequence();
-	      }
-	    }
-	  }, {
-	    key: 'incrementScore',
-	    value: function incrementScore(addlScore) {
-	      this.currentScore += addlScore;
-	      this.uiHandler.updateCurrentScore(this.currentScore);
-	
-	      if (this.currentScore >= this.nextBombScore) {
-	        this.incrementBombCount();
-	        this.nextBombScore += NEXT_BOMB_INCREMENT;
-	      }
-	
-	      if (this.currentScore > this.highScore) {
-	        this.updateHighScore(this.currentScore);
-	      }
-	    }
-	  }, {
-	    key: 'updateHighScore',
-	    value: function updateHighScore(newHighScore) {
-	      this.highScore = newHighScore;
-	      this.uiHandler.updateHighScore(this.highScore);
-	      this.newHighScore = true;
-	    }
-	  }, {
-	    key: 'setPaused',
-	    value: function setPaused(paused) {
-	      this.paused = paused;
-	      _createjs2.default.Ticker.paused = paused;
-	      this.board.pauseAnimations(paused);
-	      this.soundHandler.pause(paused);
-	    }
-	  }, {
-	    key: 'endGame',
-	    value: function endGame() {
-	      var _this3 = this;
-	
-	      this.soundHandler.reset();
-	      this.setPaused(true);
-	      this.soundHandler.resetBPM();
-	      this.started = false;
-	      _jsCookie2.default.set(HIGH_SCORE_COOKIE, this.highScore, { expires: 3650 });
-	      window.setTimeout(function () {
-	        return _this3.uiHandler.showGameOverPopup(_this3.newHighScore);
-	      }, 100);
-	    }
-	  }]);
-	
-	  return Game;
-	}();
-	
-	exports.default = Game;
-
-/***/ },
-/* 29 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var PositionHandler = function () {
-	  function PositionHandler(game) {
-	    _classCallCheck(this, PositionHandler);
-	
-	    this.game = game;
-	    this.board = game.board;
-	  }
-	
-	  _createClass(PositionHandler, [{
-	    key: "updatePositions",
-	    value: function updatePositions(e) {
-	      if (e.paused) return;
-	      this.updateBubblePositions();
-	      this.updateLaserBeamPositions();
-	      this.updateSegmentPositions();
-	      this.updateShrimpPositions();
-	      this.updateCrabPosition();
-	      this.updateScorePosition();
-	    }
-	  }, {
-	    key: "updateBubblePositions",
-	    value: function updateBubblePositions() {
-	      var bubbles = this.board.bubbles;
-	      var bubbleIdxsToRemove = [];
-	      bubbles.forEach(function (bubble, idx) {
-	        bubble.updatePosition();
-	        if (bubble.getY() <= -bubble.getHeight()) {
-	          bubbleIdxsToRemove.push(idx);
-	        }
-	      });
-	      this.board.removeBubbles(bubbleIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateLaserBeamPositions",
-	    value: function updateLaserBeamPositions() {
-	      var laserBeams = this.board.laserBeams;
-	      var laserIdxsToRemove = [];
-	      laserBeams.forEach(function (beam, idx) {
-	        beam.updatePosition();
-	        if (beam.getY() <= -beam.getHeight()) {
-	          laserIdxsToRemove.push(idx);
-	        }
-	      });
-	      this.board.removeLaserBeams(laserIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateSegmentPositions",
-	    value: function updateSegmentPositions() {
-	      var _this = this;
-	
-	      var segments = this.board.segments;
-	      segments.forEach(function (segment) {
-	        var collided = false;
-	        segments.forEach(function (segment2) {
-	          if (segment !== segment2) {
-	            if (segment.overlapsSegment(segment2)) collided = true;
-	          }
-	        });
-	        if (!collided) {
-	          _this.board.sponges.forEach(function (sponge) {
-	            if (segment.overlaps(sponge)) collided = true;
-	          });
-	        }
-	        segment.updatePosition(collided);
-	      });
-	    }
-	  }, {
-	    key: "updateShrimpPositions",
-	    value: function updateShrimpPositions() {
-	      var _this2 = this;
-	
-	      var shrimps = this.board.shrimp;
-	      var shrimpIdxsToRemove = [];
-	      shrimps.forEach(function (shrimp, idx) {
-	        shrimp.updatePosition();
-	        if (!shrimp.isPartiallyInMoveBounds()) {
-	          shrimpIdxsToRemove.push(idx);
-	        } else {
-	          if (Math.random() < .01) {
-	            var sponges = _this2.board.sponges;
-	            var segments = _this2.board.segments;
-	            var collided = false;
-	            sponges.forEach(function (sponge) {
-	              if (shrimp.overlaps(sponge)) collided = true;
-	            });
-	            if (!collided) {
-	              segments.forEach(function (segment) {
-	                if (shrimp.overlaps(segment)) collided = true;
-	              });
-	            }
-	            if (!collided && shrimp.moveBounds.maxY - shrimp.getY() > shrimp.getHeight()) {
-	              _this2.board.addSeaSponge(shrimp.dropSeaSponge());
-	            }
-	          }
-	        }
-	      });
-	      this.board.removeShrimp(shrimpIdxsToRemove);
-	    }
-	  }, {
-	    key: "updateCrabPosition",
-	    value: function updateCrabPosition() {
-	      var crab = this.board.crab;
-	      if (crab) {
-	        crab.updatePosition();
-	        if (!crab.isPartiallyInMoveBounds()) this.board.removeCrab();
-	      }
-	    }
-	  }, {
-	    key: "updateScorePosition",
-	    value: function updateScorePosition() {
-	      var scores = this.board.scores;
-	      var scoreIdxsToRemove = [];
-	      scores.forEach(function (score, idx) {
-	        if (score.getAlpha() <= 0) scoreIdxsToRemove.push(idx);else score.updatePosition();
-	      });
-	      this.board.removeScores(scoreIdxsToRemove);
-	    }
-	  }]);
-	
-	  return PositionHandler;
-	}();
-	
-	exports.default = PositionHandler;
-
-/***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _head = __webpack_require__(16);
-	
-	var _head2 = _interopRequireDefault(_head);
-	
-	var _score = __webpack_require__(18);
-	
-	var _score2 = _interopRequireDefault(_score);
-	
-	var _scores = __webpack_require__(31);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var CollisionHandler = function () {
-	  function CollisionHandler(game) {
-	    _classCallCheck(this, CollisionHandler);
-	
-	    this.game = game;
-	    this.board = game.board;
-	    this.soundHandler = game.soundHandler;
-	  }
-	
-	  _createClass(CollisionHandler, [{
-	    key: 'checkCollisions',
-	    value: function checkCollisions(e) {
-	      var game = this.game;
-	      if (e.paused) return;
-	      if (game.started) {
-	        this.checkExplosionCollisions();
-	        this.checkSegmentDiverCollisions();
-	        this.checkCrabCollisions();
-	        this.checkShrimpDiverCollisions();
-	      }
-	      if (game.started) {
-	        this.checkLaserBeamCollisions();
-	      }
-	      if (game.started) {
-	        game.tryAddPolychaete();
-	      }
-	    }
-	  }, {
-	    key: 'checkSegmentDiverCollisions',
-	    value: function checkSegmentDiverCollisions() {
-	      var _this = this;
-	
-	      this.board.segments.forEach(function (segment) {
-	        if (segment.overlaps(_this.board.diver)) {
-	          _this.game.endGame();
-	        }
-	      });
-	    }
-	  }, {
-	    key: 'checkCrabCollisions',
-	    value: function checkCrabCollisions() {
-	      var game = this.game;
-	      var crab = this.board.crab;
-	      var spongeIdxsToRemove = [];
-	
-	      if (crab) {
-	        if (crab.overlaps(this.board.diver)) {
-	          game.endGame();
-	        }
-	        this.board.sponges.forEach(function (sponge, spongeIdx) {
-	          if (crab.overlaps(sponge)) {
-	            spongeIdxsToRemove.push(spongeIdx);
-	          }
-	        });
-	        this.board.removeSeaSponges(spongeIdxsToRemove);
-	      }
-	    }
-	  }, {
-	    key: 'checkShrimpDiverCollisions',
-	    value: function checkShrimpDiverCollisions() {
-	      var _this2 = this;
-	
-	      this.board.shrimp.forEach(function (shrimp) {
-	        if (shrimp.overlaps(_this2.board.diver)) {
-	          _this2.game.endGame();
-	        }
-	      });
-	    }
-	  }, {
-	    key: 'checkLaserBeamCollisions',
-	    value: function checkLaserBeamCollisions() {
-	      var _this3 = this;
-	
-	      var game = this.game;
-	      var board = this.board;
-	      var laserBeams = this.board.laserBeams;
-	      var beamIdxsToRemove = [];
-	      var spongeIdxsToRemove = [];
-	      var segmentIdxsToRemove = [];
-	      var shrimpIdxsToRemove = [];
-	
-	      laserBeams.forEach(function (beam, beamIdx) {
-	        // only allow a laser beam a single hit
-	        var hit = false;
-	
-	        var spongeIdx = _this3.checkLaserBeamSpongeCollisions(beam);
-	        if (spongeIdx !== false) {
-	          if (spongeIdx !== true) {
-	            spongeIdxsToRemove.push(spongeIdx);
-	          }
-	          beamIdxsToRemove.push(beamIdx);
-	          hit = true;
-	        }
-	
-	        if (!hit) {
-	          var segmentIdx = _this3.checkLaserBeamSegmentCollisions(beam);
-	          if (segmentIdx !== false) {
-	            segmentIdxsToRemove.push(segmentIdx);
-	            beamIdxsToRemove.push(beamIdx);
-	            hit = true;
-	          }
-	        }
-	
-	        if (!hit) {
-	          var crabHit = _this3.checkLaserBeamCrabCollisions(beam);
-	          if (crabHit) {
-	            board.removeCrab();
-	            beamIdxsToRemove.push(beamIdx);
-	            hit = true;
-	          }
-	        }
-	
-	        if (!hit) {
-	          var shrimpIdx = _this3.checkLaserBeamShrimpCollisions(beam);
-	          if (shrimpIdx !== false) {
-	            shrimpIdxsToRemove.push(shrimpIdx);
-	            beamIdxsToRemove.push(beamIdx);
-	            hit = true;
-	          }
-	        }
-	      });
-	
-	      board.removeLaserBeams(beamIdxsToRemove);
-	      board.removeSeaSponges(spongeIdxsToRemove);
-	      board.removeSegments(segmentIdxsToRemove);
-	      board.removeShrimp(shrimpIdxsToRemove);
-	    }
-	  }, {
-	    key: 'checkLaserBeamSpongeCollisions',
-	    value: function checkLaserBeamSpongeCollisions(beam) {
-	      var sponges = this.board.sponges;
-	      for (var i = 0; i < sponges.length; i++) {
-	        if (beam.overlaps(sponges[i])) {
-	          sponges[i].handleHit();
-	          if (sponges[i].hits <= 0) {
-	            this.game.incrementScore(_scores.SPONGE_HIT_SCORE);
-	            this.board.addScore(_score2.default.createScoreAboveObject(sponges[i], _scores.SPONGE_HIT_SCORE));
-	            this.soundHandler.playSeaSpongeDestroy();
-	            return i;
-	          } else {
-	            this.soundHandler.playSeaSpongeHit();
-	            return true;
-	          }
-	        }
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkLaserBeamSegmentCollisions',
-	    value: function checkLaserBeamSegmentCollisions(beam) {
-	      var game = this.game;
-	      var segments = this.board.segments;
-	      for (var i = 0; i < segments.length; i++) {
-	        if (beam.overlaps(segments[i])) {
-	          var score = _scores.SEGMENT_HIT_SCORE;
-	          if (segments[i] instanceof _head2.default) {
-	            score = _scores.HEAD_HIT_SCORE;
-	          }
-	          game.incrementScore(score);
-	          this.board.addScore(_score2.default.createScoreAboveObject(segments[i], score));
-	          this.soundHandler.playSegmentHit();
-	          return i;
-	        }
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkLaserBeamCrabCollisions',
-	    value: function checkLaserBeamCrabCollisions(beam) {
-	      var game = this.game;
-	      var crab = this.board.crab;
-	      if (crab && beam.overlaps(crab)) {
-	        var score = _scores.CRAB_HIT_SCORE_FAR;
-	        if (crab.getY() <= 500 && crab.getY() > 400) {
-	          score = _scores.CRAB_HIT_SCORE_MIDDLE;
-	        } else if (crab.getY() > 500) {
-	          score = _scores.CRAB_HIT_SCORE_CLOSE;
-	        }
-	        game.incrementScore(score);
-	        this.board.addScore(_score2.default.createScoreAboveObject(crab, score));
-	        this.soundHandler.playCrabHit();
-	        return true;
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkLaserBeamShrimpCollisions',
-	    value: function checkLaserBeamShrimpCollisions(beam) {
-	      var shrimp = this.board.shrimp;
-	      for (var i = 0; i < shrimp.length; i++) {
-	        if (beam.overlaps(shrimp[i])) {
-	          this.game.incrementScore(_scores.SHRIMP_HIT_SCORE);
-	          this.board.addScore(_score2.default.createScoreAboveObject(shrimp[i], _scores.SHRIMP_HIT_SCORE));
-	          this.soundHandler.playShrimpHit();
-	          return i;
-	        }
-	      }
-	      return false;
-	    }
-	  }, {
-	    key: 'checkExplosionCollisions',
-	    value: function checkExplosionCollisions() {
-	      var _this4 = this;
-	
-	      var game = this.game;
-	      var board = this.board;
-	      var explosions = this.board.explosions;
-	      var sponges = this.board.sponges;
-	      var segments = this.board.segments;
-	      var shrimps = this.board.shrimp;
-	      var crab = this.board.crab;
-	      var spongeIdxsToRemove = [];
-	      var segmentIdxsToRemove = [];
-	      var shrimpIdxsToRemove = [];
-	
-	      explosions.forEach(function (explosion) {
-	        if (explosion.overlaps(_this4.board.diver)) {
-	          game.endGame();
-	        }
-	
-	        if (game.started) {
-	          (function () {
-	            var score = void 0;
-	
-	            if (crab) {
-	              if (explosion.overlaps(crab)) {
-	                score = _scores.CRAB_HIT_SCORE_CLOSE / 2;
-	                _this4.board.addScore(_score2.default.createScoreAboveObject(crab, score));
-	                game.incrementScore(score);
-	                board.removeCrab();
-	              }
-	            }
-	            sponges.forEach(function (sponge, idx) {
-	              if (explosion.overlaps(sponge)) {
-	                spongeIdxsToRemove.push(idx);
-	              }
-	            });
-	            segments.forEach(function (segment, idx) {
-	              if (explosion.overlaps(segment)) {
-	                segmentIdxsToRemove.push(idx);
-	                if (segment instanceof _head2.default) {
-	                  score = _scores.HEAD_HIT_SCORE / 2;
-	                } else {
-	                  score = _scores.SEGMENT_HIT_SCORE / 2;
-	                }
-	                _this4.board.addScore(_score2.default.createScoreAboveObject(segment, score));
-	                game.incrementScore(score);
-	              }
-	            });
-	            shrimps.forEach(function (shrimp, idx) {
-	              if (explosion.overlaps(shrimp)) {
-	                shrimpIdxsToRemove.push(idx);
-	                score = _scores.SHRIMP_HIT_SCORE / 2;
-	                _this4.board.addScore(_score2.default.createScoreAboveObject(shrimp, score));
-	                game.incrementScore(score);
-	              }
-	            });
-	          })();
-	        }
-	      });
-	
-	      board.removeSeaSponges(spongeIdxsToRemove);
-	      board.removeSegments(segmentIdxsToRemove, false);
-	      board.removeShrimp(shrimpIdxsToRemove);
-	    }
-	  }]);
-	
-	  return CollisionHandler;
-	}();
-	
-	exports.default = CollisionHandler;
-
-/***/ },
-/* 31 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var SPONGE_HIT_SCORE = exports.SPONGE_HIT_SCORE = 1;
-	var HEAD_HIT_SCORE = exports.HEAD_HIT_SCORE = 100;
-	var SEGMENT_HIT_SCORE = exports.SEGMENT_HIT_SCORE = 10;
-	var CRAB_HIT_SCORE_CLOSE = exports.CRAB_HIT_SCORE_CLOSE = 300;
-	var CRAB_HIT_SCORE_MIDDLE = exports.CRAB_HIT_SCORE_MIDDLE = 600;
-	var CRAB_HIT_SCORE_FAR = exports.CRAB_HIT_SCORE_FAR = 900;
-	var SHRIMP_HIT_SCORE = exports.SHRIMP_HIT_SCORE = 200;
 
 /***/ }
 /******/ ]);
