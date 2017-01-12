@@ -172,7 +172,7 @@
 	
 	    var cookieHighScore = _jsCookie2.default.get(HIGH_SCORE_COOKIE);
 	    this.updateHighScore(cookieHighScore ? parseInt(cookieHighScore) : 0);
-	    var muteCookie = _jsCookie2.default.get(MUTE_COOKIE);
+	    var muteCookie = _jsCookie2.default.get(MUTE_COOKIE) === 'true' ? true : false;
 	    if (muteCookie) this.uiHandler.toggleMute();
 	
 	    this.keyHandler.attachListeners();
